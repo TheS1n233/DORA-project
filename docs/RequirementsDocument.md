@@ -26,6 +26,10 @@ Version:
 - [Functional and non functional requirements](#functional-and-non-functional-requirements)
   - [Functional Requirements](#functional-requirements)
   - [Non Functional Requirements](#non-functional-requirements)
+- [Acceptance Criteria](#acceptance-criteria)
+  - [Acceptance Criteria – Module 2 Health Monitoring](#ac-module-2)
+  - [Acceptance Criteria – Module 4 Tele-assistance](#ac-module-4)
+
 - [Access Rights](#access-rights)
 - [Use case diagram and use cases](#use-case-diagram-and-use-cases)
   - [Use case diagram](#use-case-diagram)
@@ -46,7 +50,6 @@ Version:
 - [Glossary](#glossary)
   - [Key Terms and Concepts](#key-terms-and-concepts)
 - [System Design](#system-design)
-- [System Design](#system-design-1)
   - [Architectural Layers](#architectural-layers)
     - [1. Device Layer](#1-device-layer)
     - [2. Integration Layer](#2-integration-layer)
@@ -199,6 +202,35 @@ Elena works for the DORA tele-assistance service, providing remote support to se
 | **NFR7** | Fault Tolerance | During internet outage the server buffers data for **24 h** and dispatches alerts once connectivity returns. | FR2.2–FR2.4, FR4.3 |
 | **NFR8** | Scalability | Handle **10 concurrent video sessions** and **50 wearables** without > 70 % CPU on Raspberry Pi 4 (4 GB). | FR4.1, FR2.1 |
 
+# Acceptance Criteria
+
+<a id="ac-module-2"></a>
+## Acceptance Criteria – Module 2 Health Monitoring
+
+| **AC ID** | **Given / When / Then** statement | Verifies FR |
+|-----------|------------------------------------|-------------|
+| **AC-2.1-1** | **Given** a paired wearable sends a JSON vital-sign packet **When** Home Assistant receives it **Then** the packet is stored and acknowledged within **2 s**. | FR2.1 |
+| **AC-2.2-1** | **Given** a new vital record is accepted **When** it is written to the database **Then** the record is encrypted at rest using AES-256. | FR2.2 |
+| **AC-2.3-1** | **Given** 10 consecutive records for one metric **When** the trend engine runs **Then** it classifies the metric and flags *critical* if ≥ 1 record breaches its threshold. | FR2.3 |
+| **AC-2.4-1** | **Given** a metric is flagged *critical* **When** the alert rule triggers **Then** the caregiver push notification is delivered in **≤ 5 s** (NFR3). | FR2.4 |
+| **AC-2.5-1** | **Given** a scheduled glucose reading is **10 min** overdue **When** the rule fires **Then** DORA issues a TTS reminder exactly once every **10 min** until value received. | FR2.5 |
+| **AC-2.6-1** | **Given** the older adult says “Daily summary” **When** voice auth succeeds **Then** HA speaks the summary inside **2 s** of the command. | FR2.6 |
+| **AC-2.7-1** | **Given** a healthcare provider with a valid token requests export **When** HA generates the file **Then** data are produced in FHIR-JSON format and sent over TLS 1.3. | FR2.7 |
+| **AC-2.8-1** | **Given** step count < personal target at 18:00 **When** the rule executes **Then** DORA prompts the user to walk within **10 s** and records the prompt in the log. | FR2.8 |
+
+<a id="ac-module-4"></a>
+## Acceptance Criteria – Module 4 Tele-assistance
+
+| **AC ID** | **Given / When / Then** statement | Verifies FR |
+|-----------|------------------------------------|-------------|
+| **AC-4.1-1** | **Given** the operator clicks “Call resident” **When** HA signals the TV **Then** ringing starts on the TV in **≤ 2 s** and WebRTC session establishes on “Answer”. | FR4.1 |
+| **AC-4.2-1** | **Given** an incoming call marked *emergency* **When** OA does not answer in **15 s** **Then** HA auto-answers and opens two-way audio/video. | FR4.2 |
+| **AC-4.3-1** | **Given** an emergency alert timer reaches **60 s** with no OA response **When** the timer expires **Then** HA dials 112 and sends GPS + snapshot in **≤ 5 s** (NFR3). | FR4.3 |
+| **AC-4.4-1** | **Given** OA’s interest list contains “choir” **When** the operator presses “Suggest activity” **Then** HA proposes at least one matching local event dated within the next 14 days. | FR4.4 |
+| **AC-4.5-1** | **Given** an active video call **When** the operator selects “Start shared viewing” **Then** the same media stream appears on both ends within **3 s** and stays synchronised (Δ < 1 s). | FR4.5 |
+| **AC-4.6-1** | **Given** any TA session ends **When** the WebRTC channel closes **Then** HA stores start + stop timestamps, operator ID and average RTT in the audit log. | FR4.6 |
+| **AC-4.7-1** | **Given** an operator is busy and clicks “Auto-reply” **When** OA initiates a call **Then** a TTS message plays on the TV within **2 s**. | FR4.7 |
+| **AC-4.8-1** | **Given** a TA call is ringing **When** the TV overlay appears **Then** it displays operator name + role at font size ≥ 36 pt for readability. | FR4.8 |
 
 
 # Access Rights
@@ -232,6 +264,13 @@ Elena works for the DORA tele-assistance service, providing remote support to se
 # Use case diagram and use cases
 
 ## Use case diagram
+
+### Use case module2 Health Monitoring
+![DORA System Deployment](images/ucd2.png)
+
+### Use case module4 Tele-assistance
+![DORA System Deployment](images/ucd4.png)
+
 
 \<define here UML Use case diagram UCD summarizing all use cases, and their relationships>
 
@@ -623,3 +662,7 @@ This diagram illustrates the physical arrangement of DORA components, showing ho
    - Local mesh network maintains partial functionality during internet outage
    - Critical alerts can be sent via SMS if internet is unavailable
    - Local processing continues for safety functions regardless of connectivity
+
+
+
+   
