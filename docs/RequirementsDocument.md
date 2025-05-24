@@ -39,7 +39,7 @@ Version:
     - [Use case 2, UC-HM2: Critical Trend Detection & Alert](#use-case-2-uc-hm2-critical-trend-detection--alert)
       - [Scenario 2.1 – False positive cleared](#scenario-21--false-positive-cleared)
     - [Use case 3, UC-HM3: Daily Health Summary on Demand](#use-case-3-uc-hm3-daily-health-summary-on-demand)
-      - [Scenario 1.1 – Successful summary playback](#scenario-11--successful-summary-playback)
+      - [Scenario 3.1 – Successful summary playback](#scenario-11--successful-summary-playback)
   - [Use Cases: Module4-Tele-assistance](#use-cases-module4-tele-assistance)
     - [Use case 1, UC-TA1: Operator-Initiated Video Call](#use-case-1-uc-ta1-operator-initiated-video-call)
       - [Scenario 1.1 – No answer ⇒ caregiver escalation](#scenario-11--no-answer--caregiver-escalation)
@@ -271,11 +271,6 @@ Elena works for the DORA tele-assistance service, providing remote support to se
 ### Use case module4 Tele-assistance
 ![DORA System Deployment](images/ucd4.png)
 
-
-\<define here UML Use case diagram UCD summarizing all use cases, and their relationships>
-
-\<define next describe here each use case in the UCD>
-
 ## Use Cases: Module2-Health Monitoring 
 ### Use case 1, UC-HM1: Vital-Sign Acquisition & Storage
 | Actors Involved | Wearable Device, Home Assistant |
@@ -330,8 +325,8 @@ Elena works for the DORA tele-assistance service, providing remote support to se
 | Variants        | • Caregiver may request via mobile app |
 | Exceptions      | • No data ⇒ HA replies “No readings yet today.” |
 
-#### Scenario 1.1 – Successful summary playback
-| Scenario 1.1 | OA hears summary without anomalies |
+#### Scenario 3.1 – Successful summary playback
+| Scenario 3.1 | OA hears summary without anomalies |
 |--------------|------------------------------------|
 | Precondition | All metrics normal |
 | Post condition | Voice feedback delivered; event logged |
