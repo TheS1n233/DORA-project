@@ -1,0 +1,70 @@
+version: "3.9"
+networks:
+  dora-net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=dora
+      - POSTGRES_PASSWORD=dora
+      - POSTGRES_DB=dora
+      - TZ=Europe/Rome
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dora"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [dora-net]
+
+  redis:
+    image: redis:7-alpine
+    networks: [dora-net]
+
+  influxdb:
+    image: influxdb:2
+    networks: [dora-net]
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+    networks: [dora-net]
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    environment:
+      - TZ=Europe/Rome
+    volumes:
+      - ha-config:/config
+    networks: [dora-net]
+
+  # —— 以下微服务暂时只占位，稍后会 build 本地目录 ——
+  home-safety-svc:
+    build: ../../server/home-safety-svc
+    depends_on: [redis, postgres, mosquitto]
+    networks: [dora-net]
+
+  health-svc:
+    build: ../../server/health-svc
+    depends_on: [postgres, influxdb]
+    networks: [dora-net]
+
+  tv-svc:
+    build: ../../server/tv-svc
+    networks: [dora-net]
+
+  tele-assist-svc:
+    build: ../../server/tele-assist-svc
+    networks: [dora-net]
+
+  notification-svc:
+    build: ../../server/notification-svc
+    depends_on: [redis]
+    networks: [dora-net]
+
+volumes:
+  pgdata:
+  ha-config:
