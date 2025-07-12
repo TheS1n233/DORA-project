@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "home-safety-svc"
+version = "0.1.0"
+description = "DORA Home Safety microservice"
+authors = ["yujie <yujie@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.30.1"}
+pydantic = "^2.9.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
