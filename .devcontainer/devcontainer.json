@@ -1,15 +1,19 @@
 {
   "name": "dora-dev",
   "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "20" },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
   },
-  "postCreateCommand": "pip install poetry pre-commit && export PATH=$PATH:$HOME/.local/bin && pre-commit install
+
+  "postCreateCommand": "pip install --break-system-packages --no-cache-dir poetry pre-commit && pre-commit install",
+
   "mounts": [
     "source=dora-docker-volumes,target=/var/lib/docker,type=volume"
   ],
+
   "customizations": {
     "vscode": {
       "extensions": [
