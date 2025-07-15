@@ -6,7 +6,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
   },
-  "postCreateCommand": "pip install poetry pre-commit && pre-commit install",
+  "postCreateCommand": "pip install poetry pre-commit && export PATH=$PATH:$HOME/.local/bin && pre-commit install
   "mounts": [
     "source=dora-docker-volumes,target=/var/lib/docker,type=volume"
   ],

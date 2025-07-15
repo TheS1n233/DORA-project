@@ -40,7 +40,6 @@ services:
       - ha-config:/config
     networks: [dora-net]
 
-  # —— 以下微服务暂时只占位，稍后会 build 本地目录 ——
   home-safety-svc:
     build: ../../server/home-safety-svc
     depends_on: [redis, postgres, mosquitto]

@@ -2,7 +2,7 @@
 name = "$svc"
 version = "0.1.0"
 description = "DORA micro-service: $svc"
-authors = ["yujie <yujie@example.com>"]
+authors = ["yujie <s323024@studenti.polito.it>"]
 
 [tool.poetry.dependencies]
 python = "^3.11"

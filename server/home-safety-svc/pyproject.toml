@@ -1,16 +1,24 @@
 [tool.poetry]
-name = "$svc"
+name = "home-safety-svc"
 version = "0.1.0"
-description = "DORA micro-service: $svc"
-authors = ["yujie <yujie@example.com>"]
+description = "DORA micro-service: home-safety (fall detection)"
+authors = ["yujie <s323024@studenti.polito.it>"]
+
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.30.1"}
 
+
+opencv-python-headless = "^4.10.0.82"
+mediapipe = "^0.10.14"
+numpy = "^1.26"
+redis = "^5.0.4"
+
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.1"
+pytest = "^8.4.1"
 
 [build-system]
 requires = ["poetry-core"]

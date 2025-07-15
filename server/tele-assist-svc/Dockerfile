@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-# 关键：让 Poetry 装到系统层，uvicorn 才在 PATH
+# let Poetry be installed on the system layer, and uvicorn can directly place PATH
 ENV POETRY_VIRTUALENVS_CREATE=false \
     POETRY_CACHE_DIR=/var/cache/pypoetry
 
