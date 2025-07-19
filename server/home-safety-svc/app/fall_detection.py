@@ -5,17 +5,20 @@ Very-first fall-detection utility
 * 简单阈值：头部 Y 坐标 > 臀部 Y 坐标 + margin → 视为倒地
 * 返回 bool
 """
+
 from __future__ import annotations
 
 import cv2
 import mediapipe as mp
 import numpy as np
 
-mp_pose = mp.solutions.pose.Pose(static_image_mode=False,
-                                 model_complexity=1,
-                                 enable_segmentation=False,
-                                 min_detection_confidence=0.5,
-                                 min_tracking_confidence=0.5)
+mp_pose = mp.solutions.pose.Pose(
+    static_image_mode=False,
+    model_complexity=1,
+    enable_segmentation=False,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5,
+)
 
 
 def detect_fall(frame_bgr: np.ndarray, margin_px: int = 40) -> bool:
@@ -28,6 +31,7 @@ def detect_fall(frame_bgr: np.ndarray, margin_px: int = 40) -> bool:
         return False
 
     landmarks = result.pose_landmarks.landmark
+
     def _y(idx: int) -> float:  # 像素坐标
         return landmarks[idx].y * frame_bgr.shape[0]
 

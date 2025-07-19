@@ -1,6 +1,6 @@
 {
   "name": "dora-dev",
-  "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
 
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "20" },
@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
   },
 
-  "postCreateCommand": "pip install --break-system-packages --no-cache-dir poetry pre-commit && pre-commit install",
+  "postCreateCommand": "python -m pip install --upgrade --no-cache-dir poetry pre-commit && python -m pre_commit install && cd server/home-safety-svc && poetry config virtualenvs.create false && poetry install --no-interaction --no-root",
 
   "mounts": [
     "source=dora-docker-volumes,target=/var/lib/docker,type=volume"
