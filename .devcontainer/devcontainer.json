@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
   },
 
-  "postCreateCommand": "python -m pip install --upgrade --no-cache-dir poetry pre-commit && python -m pre_commit install && cd server/home-safety-svc && poetry config virtualenvs.create false && poetry install --no-interaction --no-root",
+  "postCreateCommand": "python -m pip install --upgrade --no-cache-dir poetry pre-commit && python -m pre_commit install",
 
   "mounts": [
     "source=dora-docker-volumes,target=/var/lib/docker,type=volume"

@@ -1,9 +1,9 @@
 """
-Very-first fall-detection utility
+fall-detection
 --------------------------------
-* 读入 BGR numpy frame → MediaPipe Pose
-* 简单阈值：头部 Y 坐标 > 臀部 Y 坐标 + margin → 视为倒地
-* 返回 bool
+* readin BGR numpy frame → MediaPipe Pose
+* threshold：head Y > hip Y  + margin → as falled
+* return bool
 """
 
 from __future__ import annotations
@@ -32,10 +32,10 @@ def detect_fall(frame_bgr: np.ndarray, margin_px: int = 40) -> bool:
 
     landmarks = result.pose_landmarks.landmark
 
-    def _y(idx: int) -> float:  # 像素坐标
+    def _y(idx: int) -> float:  # pixel coordinate
         return landmarks[idx].y * frame_bgr.shape[0]
 
-    # 关键点：0 nose, 24 left-hip, 23 right-hip
+    # 0 nose, 24 left-hip, 23 right-hip
     head_y = _y(0)
     hip_y = (_y(23) + _y(24)) / 2
     return head_y > hip_y + margin_px
