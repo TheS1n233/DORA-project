@@ -1,0 +1,35 @@
+stages: [lint, test, e2e]
+
+# ---------- LINT ----------
+lint:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install --no-cache-dir pre-commit
+  script:
+    - pre-commit run --all-files
+
+# ---------- UNIT TEST ----------
+unit-test:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - pip install --no-cache-dir pytest fastapi httpx
+  script:
+    - pytest -q server/*/tests
+
+# ---------- E2E SMOKE ----------
+e2e-home-safety:
+  stage: e2e
+  image: docker:24
+  services: [docker:dind]
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - docker compose -f ops/compose/docker-compose.dev.yml up -d --build home-safety-svc redis
+    - ./ops/scripts/smoke_hs.sh
+  after_script:
+    - docker compose -f ops/compose/docker-compose.dev.yml down -v

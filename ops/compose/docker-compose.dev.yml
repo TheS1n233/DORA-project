@@ -41,10 +41,18 @@ services:
     networks: [dora-net]
 
   home-safety-svc:
-    build: ../../server/home-safety-svc
-    depends_on: [redis, postgres, mosquitto]
-    networks: [dora-net]
-
+    build:
+      context: ../../server/home-safety-svc
+    container_name: compose-home-safety-svc
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+    volumes:
+      - ../../server/home-safety-svc:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis
+    ports:
+      - "8001:8001"  
   health-svc:
     build: ../../server/health-svc
     depends_on: [postgres, influxdb]
