@@ -4,40 +4,37 @@ default:
   retry:
     max: 2
     when: [runner_system_failure, script_failure]
-
-variables: 
-  GIT_STRATEGY: clone
-  GIT_DEPTH: 0        
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
 
 stages: [lint, test, e2e]
 
 # ---------- LINT ----------
 lint:
   stage: lint
-  tags: [geocontrol]
   before_script:
-    - |
-      echo "Runner = $CI_RUNNER_DESCRIPTION"
-      if [[ "$CI_RUNNER_DESCRIPTION" == mac* ]]; then
-        echo "❌ mac runner detected — exit and retry"
-        exit 1
+    # Avoid mac runners
+    - echo "Runner = $CI_RUNNER_DESCRIPTION"
+    - if [[ "$CI_RUNNER_DESCRIPTION" == mac* ]]; then
+        echo "Mac runner lacks Docker daemon — abort & retry";
+        exit 1;
       fi
+    # Prepare system
     - apt-get update -y && apt-get install -y --no-install-recommends git
+    # Fix Git environment for pre-commit
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"
+    - git remote add origin "$CI_REPOSITORY_URL" || true
+    # Install linter
     - python -m pip install --no-cache-dir pre-commit==4.2.0
-  script: pre-commit run --all-files --color always
+  script:
+    - pre-commit run --all-files --color always
   timeout: 10m
 
 # ---------- UNIT TEST ----------
 unit-test:
   stage: test
-  tags: [geocontrol]
   before_script:
-    - |
-      echo "Runner = $CI_RUNNER_DESCRIPTION"
-      if [[ "$CI_RUNNER_DESCRIPTION" == mac* ]]; then
-        echo "❌ mac runner detected — exit and retry"
-        exit 1
-      fi
     - apt-get update && apt-get install -y --no-install-recommends libgl1
     - python -m pip install --no-cache-dir pytest fastapi httpx redis \
         mediapipe==0.10.21 opencv-python-headless
@@ -51,18 +48,11 @@ e2e-home-safety:
   stage: e2e
   image: docker:24
   services: [docker:dind]
-  tags: [geocontrol]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
   before_script:
-    - |
-      echo "Runner = $CI_RUNNER_DESCRIPTION"
-      if [[ "$CI_RUNNER_DESCRIPTION" == mac* ]]; then
-        echo "❌ mac runner detected — exit and retry"
-        exit 1
-      fi
     - apk add --no-cache curl
   script:
     - docker compose -f ops/compose/docker-compose.dev.yml up -d --build home-safety-svc redis
