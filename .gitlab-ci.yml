@@ -5,6 +5,10 @@ default:
     max: 2
     when: [runner_system_failure, script_failure]
 
+variables: 
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0        
+
 stages: [lint, test, e2e]
 
 # ---------- LINT ----------
