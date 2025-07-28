@@ -1,21 +1,21 @@
-default:  
+default:
   image: python:3.11-slim
   tags: [geocontrol]
-  retry:
-    max: 2
-    when: [runner_system_failure]
+  retry: { max: 2, when: [runner_system_failure] }
 
 stages: [lint, test, e2e]
 
 # ---------- LINT ----------
 lint:
   stage: lint
-  before_script:
-    - apt-get update && apt-get install -y --no-install-recommends git    # install git for pre-commit internals
+  # **with pre-commit run together，apt if error then fail**
   script:
+    # git for pre-commit internals
+    - apt-get update && apt-get install -y --no-install-recommends git
+    # pre-commit itself
     - python -m pip install --no-cache-dir pre-commit==4.2.0
     - pre-commit run --all-files --color always
-  timeout: 10m                                    # avoid timeout
+  timeout: 10m
 
 # ---------- UNIT TEST ----------
 unit-test:
