@@ -1,5 +1,4 @@
-# All job run on the geocontrol Runner，but autoretry runner_system_failure
-default:
+default:  
   image: python:3.11-slim
   tags: [geocontrol]
   retry:
@@ -48,5 +47,3 @@ e2e-home-safety:
   after_script:
     - docker compose -f ops/compose/docker-compose.dev.yml down -v || true
   timeout: 20m
-  # DinD must need
-  privileged: true
