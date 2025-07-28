@@ -9,7 +9,7 @@ def create_app() -> FastAPI:
 
     @app.get("/ping")
     def ping() -> dict[str, str]:
-        return {"msg": "pong (test compose-----)"}
+        return {"msg": "pong"}
 
     return app
 
