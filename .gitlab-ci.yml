@@ -45,15 +45,13 @@ e2e-home-safety:
   stage: e2e
   image: docker:24
   services:
-    - name: docker:24-dind   # background daemon
-      command: ["--tls=false"]  # turn off TLS
+    - name: docker:24-dind               # background daemon
+      command: ["--tls=false"]           # turn off TLS
+      privileged: true                   # put it on the service down
   variables:
-    # tell CLI to find dind，and turn off the default TLS mechanism
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   script:
     - apk add --no-cache curl
-    - docker info            
+    - docker info 
     - docker compose -f ops/compose/docker-compose.dev.yml up -d --build home-safety-svc redis
-
-  privileged: true
