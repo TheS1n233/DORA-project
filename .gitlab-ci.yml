@@ -45,13 +45,14 @@ e2e-home-safety:
   stage: e2e
   image: docker:24
   services:
-    - name: docker:24-dind               # background daemon
-      command: ["--tls=false"]           # turn off TLS
-      privileged: true                   # put it on the service down
+    - name: docker:24-dind
+      command: ["--tls=false"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   script:
     - apk add --no-cache curl
-    - docker info 
+    - docker info || true
     - docker compose -f ops/compose/docker-compose.dev.yml up -d --build home-safety-svc redis
+  after_script:
+    - docker compose -f ops/compose/docker-compose.dev.yml down -v || true
