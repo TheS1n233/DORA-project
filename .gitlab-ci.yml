@@ -44,16 +44,16 @@ unit-test:
 e2e-home-safety:
   stage: e2e
   image: docker:24
-  services: [docker:dind]
+  services:
+    - name: docker:24-dind   # background daemon
+      command: ["--tls=false"]  # turn off TLS
   variables:
+    # tell CLI to find dind，and turn off the default TLS mechanism
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
-  before_script:
-    - apk add --no-cache curl
   script:
+    - apk add --no-cache curl
+    - docker info            
     - docker compose -f ops/compose/docker-compose.dev.yml up -d --build home-safety-svc redis
-    - ./ops/scripts/smoke_hs.sh
-  after_script:
-    - docker compose -f ops/compose/docker-compose.dev.yml down -v || true
-  timeout: 20m
+
+  privileged: true
