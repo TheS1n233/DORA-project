@@ -3,7 +3,7 @@ variables:
   GIT_DEPTH: 0
 
 default:
-  image: python:3.11-bullseye
+  image: python:3.11-bookworm
   tags: [geocontrol]
   retry:
     max: 2
