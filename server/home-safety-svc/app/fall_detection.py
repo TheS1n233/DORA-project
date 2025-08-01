@@ -39,3 +39,19 @@ def detect_fall(frame_bgr: np.ndarray, margin_px: int = 40) -> bool:
     head_y = _y(0)
     hip_y = (_y(23) + _y(24)) / 2
     return head_y > hip_y + margin_px
+
+
+# Return True if series indicates a fall by knee-angle rule.
+def detect_fall_angles(
+    angle_series, knee_thresh: float = 90.0, window: int = 12, delta: float = 30.0
+) -> bool:
+
+    from collections import deque
+
+    win = deque(maxlen=window)
+    for ang in angle_series:
+        win.append(ang)
+        if len(win) == window:
+            if all(a < knee_thresh for a in win) and (max(win) - min(win) > delta):
+                return True
+    return False

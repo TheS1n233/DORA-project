@@ -1,3 +1,9 @@
+workflow:       #stop run ci now
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - when: never
+
 variables:
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
@@ -34,7 +40,7 @@ unit-test:
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends libgl1
     - python -m pip install --no-cache-dir pytest fastapi httpx redis \
-        mediapipe==0.10.21 opencv-python-headless
+        mediapipe==0.10.21 opencv-python-headless tqdm
     - export PYTHONPATH="$PWD/server/health-svc:$PWD/server/home-safety-svc:$PWD/server/notification-svc:$PWD/server/tele-assist-svc:$PWD/server/tv-svc"
   script:
     - pytest -q server/*/tests

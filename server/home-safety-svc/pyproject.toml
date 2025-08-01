@@ -16,6 +16,7 @@ opencv-python-headless = "^4.10.0.82"
 mediapipe = "^0.10.14"
 numpy = "^1.26"
 redis = "^5.0.4"
+tqdm = "^4.66"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"

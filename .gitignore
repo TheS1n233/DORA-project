@@ -358,3 +358,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node,visualstudiocode,windows,docker
+server/home-safety-svc/tests/resources/*.mp4
+
+# Ignore local data & generated reports
+dataset/
+reports/
