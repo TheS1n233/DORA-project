@@ -17,6 +17,7 @@ mediapipe = "^0.10.14"
 numpy = "^1.26"
 redis = "^5.0.4"
 tqdm = "^4.66"
+paho-mqtt = "^2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
