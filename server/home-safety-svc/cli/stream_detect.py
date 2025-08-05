@@ -6,25 +6,21 @@ Usage
 python -m server.home_safety_svc.cli.stream_detect \
     --broker  localhost \
     --topic   fall/detected
-
 """
 
 import argparse
-import json
 import time
 from collections import deque
 from typing import Deque
+
 import cv2
 import mediapipe as mp
 import numpy as np
 import paho.mqtt.client as mqtt
 from tqdm import tqdm
-import sys
-from pathlib import Path
+from app.core.mqtt import publish_fall
 
-SERVICE_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(SERVICE_ROOT))
-from app.fall_detection import detect_fall_angles  # noqa: E402
+from app.fall_detection import detect_fall_angles
 
 # ------------------------- MediaPipe initialize -------------------------
 mp_pose = mp.solutions.pose
@@ -50,11 +46,6 @@ def knee_angle(landmarks) -> float:
     return np.degrees(np.arccos(np.clip(cos_ang, -1.0, 1.0)))
 
 
-def mqtt_publish(client: mqtt.Client, topic: str, payload: dict) -> None:
-    """Publish JSON payload."""
-    client.publish(topic, json.dumps(payload), qos=1, retain=True)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--broker", default="localhost", help="MQTT broker host")
@@ -63,7 +54,7 @@ def main() -> None:
     parser.add_argument(
         "--source",
         default="tests/resources/user_fall_00.mp4",
-        help="camera num (0/1/…) or MP4 path",
+        help="camera index (0/1/…) or MP4 path",
     )
     parser.add_argument(
         "--window",
@@ -71,13 +62,18 @@ def main() -> None:
         default=8,
         help="Slide the window length to align with detect_fall_angles",
     )
+    parser.add_argument(
+        "--knee", type=float, default=105.0, help="knee angle threshold (°)"
+    )
+    parser.add_argument(
+        "--delta", type=float, default=20.0, help="min angle drop inside window (°)"
+    )
     args = parser.parse_args()
 
     # ------------------------- MQTT -------------------------
     client = mqtt.Client(client_id=f"fall-detector-{int(time.time())}")
-    client.connect(args.broker, args.port, keepalive=60)
     rc = client.connect(args.broker, args.port, keepalive=60)
-    ("connect rc =", rc)  # 0 == successful connection
+    print("connect rc =", rc)  # 0 == successful connection
     client.loop_start()
 
     # ------------------------- camera -------------------------
@@ -107,24 +103,20 @@ def main() -> None:
 
                     # Detect only when the sliding window is full
                     if len(angle_buf) == angle_buf.maxlen:
-                        fallen = detect_fall_angles(list(angle_buf))
-
+                        fallen = detect_fall_angles(
+                            list(angle_buf),
+                            knee_thresh=args.knee,
+                            window=args.window,
+                            delta=args.delta,
+                        )
                         if fallen and time.time() - last_event_ts > 10:
                             # 10 seconds to suppress repeated alarms
-                            payload = {
-                                "ts": int(time.time()),
-                                "angles": list(angle_buf),
-                                "method": "cv-knee-angle",
-                            }
-                            mqtt_publish(client, args.topic, payload)
+                            publish_fall(True, list(angle_buf))
+
                             pbar.set_description_str(
-                                f"⚠️  Fall detected! 发布到 {args.topic}"
+                                f"⚠️  Fall detected! Posted to {args.topic}"
                             )
                             last_event_ts = time.time()
-
-                # Press q to quit
-        #                if cv2.waitKey(1) & 0xFF == ord("q"):
-        #                    break
         finally:
             cap.release()
             client.loop_stop()
