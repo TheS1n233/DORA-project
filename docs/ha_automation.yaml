@@ -1,0 +1,10 @@
+# docs/ha_automation.yaml
+- alias: 'Fall detected → TTS'
+  trigger:
+    - platform: mqtt
+      topic: fall/detected
+      payload_contains: '"fall": true'
+  action:
+    - service: tts.google_say
+      data:
+        message: 'Alarm: Fall detected!'

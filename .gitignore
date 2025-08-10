@@ -363,3 +363,5 @@ server/home-safety-svc/tests/resources/*.mp4
 # Ignore local data & generated reports
 dataset/
 reports/
+server/health-svc/.venv-hm/
+server/home-safety-svc/.venv-hs/
