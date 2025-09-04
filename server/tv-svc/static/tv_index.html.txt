@@ -1,0 +1,81 @@
+<!doctype html>
+<!-- English comments only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DORA TV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="/static/style.css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="brand">DORA • TV</div>
+        <div class="status">
+          <span id="wsState">WS: disconnected</span>
+          <span id="wsCount">Peers: 0</span>
+        </div>
+      </header>
+
+      <section class="controls">
+        <input id="token" type="text" placeholder="WS token (optional)" />
+        <button id="btnConnect">Connect</button>
+        <button id="btnVoice">🎤 Voice</button>
+        <input id="intentText" type="text" placeholder='Try: "call caregiver"'/>
+        <button id="btnSendIntent">Send Intent</button>
+      </section>
+
+      <section class="cowatch">
+        <div class="cowatch-row">
+          <input id="room" type="text" placeholder="Room (e.g., demo)" />
+          <button id="btnJoin">Join Room</button>
+          <input id="mediaUrl" type="text" placeholder="Media URL (e.g., /static/sample.mp4)" />
+          <button id="btnLoad">Load</button>
+          <button id="btnPlay">Play</button>
+          <button id="btnPause">Pause</button>
+          <button id="btnSync">Sync</button>
+          <!-- TTS controls -->
+          <button id="btnSpeak">Speak</button>
+          <!-- Keep a hard fallback to toggle auto TTS even if tv.js binding fails -->
+          <button id="btnAutoTts" onclick="window.toggleAutoTts && window.toggleAutoTts()">Auto TTS: OFF</button>
+        </div>
+        <!-- Important: muted + playsinline to allow programmatic play -->
+        <video id="player" class="player" controls preload="metadata" muted playsinline></video>
+        <!-- BEGIN: call overlay (inserted between </video> and </section>) -->
+        <div id="callOverlay" class="call-overlay hidden">
+          <div class="call-panel">
+            <div class="call-title">Incoming call</div>
+            <div class="call-actions">
+              <button id="btnAnswer" class="btn btn-ok">Answer</button>
+              <button id="btnHang" class="btn btn-warn">Hang up</button>
+            </div>
+            <div id="callIframeWrap" class="call-iframe hidden"></div>
+          </div>
+        </div>
+        <!-- END: call overlay -->
+        
+      </section>
+
+      <section class="cards" id="cards"></section>
+
+      <footer class="foot">
+        <small>Use arrow keys and Enter to navigate. This page uses WebSocket to receive events from HS/HM.</small>
+      </footer>
+    </div>
+
+    <script>
+      // Prefill room from ?room= query for convenience (safe no-op otherwise)
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var room = params.get('room');
+          if (room) {
+            var el = document.getElementById('room');
+            if (el && !el.value) el.value = room;
+          }
+        } catch (_) {}
+      })();
+    </script>
+    <script src="/static/tv.js"></script>
+  </body>
+</html>

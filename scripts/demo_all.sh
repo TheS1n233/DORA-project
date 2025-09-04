@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# English comments only
+# for module 111111111111111
 set -euo pipefail
 
 # --- paths ---

@@ -1,40 +1,134 @@
+# English comments only
+from __future__ import annotations
 import os
+import asyncio
+import socket
+from contextlib import asynccontextmanager
+from typing import Optional
+
 from fastapi import FastAPI
-from app.api.vitals import router as vitals_router
-from app.subscriber import start_subscriber, stop_subscriber
-from app.scheduler import start_scheduler, stop_scheduler
+from .api import vitals as _api_vitals
+from .api import export as _api_export
+from redis import Redis
+
+from .core.config import HMConfig, load_config, print_config
+from .core.redis import get_redis
+from .notify.telegram import notify
+from . import subscriber as sub
+from .metrics import snapshot as metrics_snapshot
+
+_cfg: Optional[HMConfig] = None
+_scheduler_task: Optional[asyncio.Task] = None
 
 
-def create_app(
-    enable_subscriber: bool = False, enable_scheduler: bool = False
-) -> FastAPI:
-    """Create FastAPI app; defaults off for tests."""
-    app = FastAPI(title="health-svc")
+async def _tick_scheduler(cfg: HMConfig, r: Redis) -> None:
+    while True:
+        try:
+            if cfg.START_SCHEDULER:
+                sub.check_no_measure_and_remind(cfg, r)
+        except Exception as e:
+            print(f"[hm] scheduler tick error: {e}")
+        await asyncio.sleep(10)
 
-    # Routers
-    app.include_router(vitals_router)
 
-    @app.get("/ping")
-    def ping() -> dict[str, str]:
-        return {"msg": "pong"}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _cfg, _scheduler_task
+    r = get_redis()
+    _cfg = load_config()
+    print_config(_cfg)
 
-    @app.on_event("startup")
-    def _startup() -> None:
-        if (
-            enable_subscriber
-            and os.getenv("START_SUBSCRIBER", "true").lower() == "true"
-        ):
-            start_subscriber()
-        if enable_scheduler and os.getenv("START_SCHEDULER", "true").lower() == "true":
-            start_scheduler()
+    try:
+        socket.gethostbyname(os.getenv("MQTT_HOST", "mosquitto"))
+        print("[hm] mqtt dns ok")
+    except Exception as e:
+        print(f"[hm] mqtt dns failed: {e}")
 
-    @app.on_event("shutdown")
-    def _shutdown() -> None:
-        stop_scheduler()
-        stop_subscriber()
+    if _cfg.START_SUBSCRIBER:
+        try:
+            sub.start(_cfg, r)
+        except Exception as e:
+            print(f"[hm] subscriber start failed: {e}")
 
+    if _cfg.START_SCHEDULER:
+        loop = asyncio.get_event_loop()
+        _scheduler_task = loop.create_task(_tick_scheduler(_cfg, r))
+
+    yield
+
+    try:
+        sub.stop()
+    except Exception:
+        pass
+    if _scheduler_task:
+        try:
+            _scheduler_task.cancel()
+        except Exception:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(_api_vitals.router)
+app.include_router(_api_export.router)
+
+@app.get("/whoami")
+def whoami():
+    import app as _pkg
+    return {"service": "hm", "import_path": getattr(_pkg, "__file__", "")}
+
+@app.get("/ping")
+def ping():
+    return {"msg": "pong"}
+
+
+@app.get("/health/live")
+def health_live():
+    return {"status": "live"}
+
+
+@app.get("/health/ready")
+def health_ready():
+    import os
+    ok_redis = False
+    ok_dns = False
+    sched = _scheduler_task is not None
+    sub_status = sub.status()
+    try:
+        get_redis().ping()
+        ok_redis = True
+    except Exception:
+        ok_redis = False
+    try:
+        host = os.getenv("MQTT_HOST", "mosquitto")
+        socket.gethostbyname(host)
+        ok_dns = True
+    except Exception:
+        ok_dns = False
+
+    has_token = bool(os.getenv("TELEGRAM_TOKEN"))
+    has_chat = bool(os.getenv("TELEGRAM_CHAT_ID"))
+    metrics = metrics_snapshot()
+
+    return {
+        "redis": ok_redis,
+        "mqtt_dns": ok_dns,
+        "scheduler": sched,
+        "subscriber": bool(sub_status.get("running")),
+        "last_msg_ts": sub_status.get("last_msg_ts"),
+        "notify_env": {"has_token": has_token, "has_chat": has_chat},
+        "metrics": metrics,
+    }
+
+# English comments only
+def create_app(enable_subscriber: Optional[bool] = None,
+               enable_scheduler: Optional[bool] = None) -> FastAPI:
+    """
+    Factory to create app instance with optional background features switched.
+    """
+
+    if enable_subscriber is not None:
+        os.environ["START_SUBSCRIBER"] = "1" if enable_subscriber else "0"
+    if enable_scheduler is not None:
+        os.environ["START_SCHEDULER"] = "1" if enable_scheduler else "0"
     return app
-
-
-# Normal runtime enables both
-app = create_app(enable_subscriber=True, enable_scheduler=True)

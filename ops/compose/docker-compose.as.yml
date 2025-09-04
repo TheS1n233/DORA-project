@@ -1,0 +1,23 @@
+services:
+  assistant-svc:
+    container_name: assistant-svc
+    build:
+      context: ../..
+      dockerfile: server/assistant-svc/Dockerfile
+    image: dora/assistant-svc:dev
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      TV_HOSTNAME: ${TV_HOSTNAME:-tv-svc}
+      TV_PORT: ${TV_PORT:-8200}
+    ports:
+      - "8400:8400"
+    depends_on:
+      - tv-svc
+    networks:
+      - dora-net
+
+networks:
+  dora-net:
+    external: true

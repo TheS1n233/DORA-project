@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import json
 import os
@@ -11,7 +10,10 @@ def publish(topic: str, message: dict) -> None:
     host = os.getenv("MQTT_HOST", "127.0.0.1")
     port = int(os.getenv("MQTT_PORT", "1883"))
     keepalive = int(os.getenv("MQTT_KEEPALIVE", "60"))
-    c = mqtt.Client(client_id=f"mock-entry-{int(time.time())}")
+    c = mqtt.Client(
+        client_id=f"mock-entry-{int(time.time())}",
+        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    )
     user = os.getenv("MQTT_USER")
     pwd = os.getenv("MQTT_PASS")
     if user:

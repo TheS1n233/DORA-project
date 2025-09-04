@@ -1,12 +1,23 @@
+# English comments only
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    POETRY_VERSION=1.8.3 \
+    POETRY_VIRTUALENVS_CREATE=false
+
 WORKDIR /app
 
-# let Poetry be installed on the system layer, and uvicorn can directly place PATH
-ENV POETRY_VIRTUALENVS_CREATE=false \
-    POETRY_CACHE_DIR=/var/cache/pypoetry
+# Install Python deps via Poetry (no venv; system site-packages)
+COPY pyproject.toml poetry.lock* ./
+RUN pip install -U pip && pip install "poetry==${POETRY_VERSION}" \
+ && poetry install -n --no-root
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir poetry && poetry install --no-interaction --no-root
+# Copy source
+COPY . .
 
-COPY app ./app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8100
+
+# Base command; compose may append --reload via env RELOAD
+CMD ["sh","-lc","uvicorn app.main:app --host 0.0.0.0 --port 8100"]

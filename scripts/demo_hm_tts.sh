@@ -1,3 +1,4 @@
+##### for module222
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,27 +62,44 @@ PY
   log "uvicorn started (port 8100)"
 }
 
+stop_app() {
+  log "stopping uvicorn on :8100"
+  lsof -i:8100 -t | xargs -r kill || true
+  pkill -f "server/health-svc.*uvicorn app.main:app" >/dev/null 2>&1 || true
+}
+
 pub() { docker exec -i dora-mqtt sh -lc "mosquitto_pub -t 'vitals/ingest' -m '$1'"; }
 tail_logs() { tail -n 120 "${UVICORN_LOG}" || true; }
 
 main() {
-  ensure
-  start_app
+  case "${1:-run}" in
+    run)
+      ensure
+      start_app
 
-  log "seed some vitals for summary"
-  ts=$(date +%s)
-  pub "{\"ts\":$ts,\"metric\":\"hr\",\"value\":95,\"unit\":\"bpm\"}"
-  pub "{\"ts\":$ts,\"metric\":\"spo2\",\"value\":96,\"unit\":\"%\"}"
-  pub "{\"ts\":$ts,\"metric\":\"glucose\",\"value\":170,\"unit\":\"mgdl\"}"
+      log "seed some vitals for summary"
+      ts=$(date +%s)
+      pub "{\"ts\":$ts,\"metric\":\"hr\",\"value\":95,\"unit\":\"bpm\"}"
+      pub "{\"ts\":$ts,\"metric\":\"spo2\",\"value\":96,\"unit\":\"%\"}"
+      pub "{\"ts\":$ts,\"metric\":\"glucose\",\"value\":170,\"unit\":\"mgdl\"}"
 
-  log "wait ~30s to observe reminder+summary notifications"
-  for i in {1..6}; do
-    sleep 5
-    echo -n "."
-  done
-  echo
-  log "uvicorn logs:"
-  tail_logs
+      log "wait ~30s to observe reminder+summary notifications"
+      for i in {1..6}; do
+        sleep 5
+        echo -n "."
+      done
+      echo
+      log "uvicorn logs:"
+      tail_logs
+      ;;
+    stop)
+      stop_app
+      ;;
+    *)
+      echo "Usage: $0 [run|stop]"
+      exit 1
+      ;;
+  esac
 }
 
 main "$@"

@@ -1,0 +1,38 @@
+services:
+  home-safety-svc:
+    build:
+      context: ../../server/home-safety-svc
+      dockerfile: Dockerfile
+    image: dora/home-safety-svc:${DORA_TAG:-local}
+    working_dir: /app
+    volumes:
+      - ../../server/home-safety-svc:/app
+      - ../../scripts:/scripts:ro
+    command: >
+      sh -lc "
+      RUN_CMD='uvicorn app.main:app --host 0.0.0.0 --port 8000';
+      if [ \"${RELOAD:-false}\" = \"true\" ]; then RUN_CMD=\"$${RUN_CMD} --reload\"; fi;
+      echo \"[hs] start: $${RUN_CMD}\";
+      exec $${RUN_CMD}
+      "
+    environment:
+      # English comments only: force in-cluster broker; never inherit host's 127.0.0.1
+      MQTT_HOST: mosquitto
+      REDIS_HOST: redis
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      AWAY_MODE: ${AWAY_MODE:-true}
+      START_SUBSCRIBER: ${START_SUBSCRIBER:-true}
+      RELOAD: ${RELOAD:-false}
+    depends_on:
+      - redis
+    networks: [dora-net]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      # English comments only: use python to probe live endpoint
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=2); sys.exit(0)\" || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 60s

@@ -1,0 +1,21 @@
+services:
+  tv-svc:
+    build:
+      context: ../../server/tv-svc
+    image: dora/tv-svc:dev
+    container_name: compose-tv-svc
+    environment:
+      - TV_PORT=8200
+    ports:
+      - "8200:8200"
+    # Dev bind mount: reflect host static files without rebuilding images
+    volumes:
+      - ${PWD}/server/tv-svc/app:/app/app:ro
+      - ${PWD}/server/tv-svc/static:/app/static:ro
+    networks:
+      - dora-net
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net

@@ -1,0 +1,23 @@
+/* English comments only */
+:root{
+  --bg-page:#F0FDFA;          /* mint background */
+  --brand:#0f766e;            /* deep teal */
+  --brand-strong:#0b5b55;
+  --text:#0f172a;             /* slate-900 */
+  --chip-bg-ok:#dcfce7;
+  --chip-fg-ok:#166534;
+  --chip-bg-warn:#fef9c3;
+  --chip-fg-warn:#92400e;
+  --chip-bg-bad:#fee2e2;
+  --chip-fg-bad:#991b1b;
+}
+
+html,body{
+  background: var(--bg-page);
+  color: var(--text);
+}
+
+/* Basic button skin used by new components */
+button{
+  font: inherit;
+}

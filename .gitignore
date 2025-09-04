@@ -365,3 +365,8 @@ dataset/
 reports/
 server/health-svc/.venv-hm/
 server/home-safety-svc/.venv-hs/
+
+# env files with secrets
+.env
+*.env
+*.env.*

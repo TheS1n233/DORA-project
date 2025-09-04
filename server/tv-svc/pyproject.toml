@@ -1,16 +1,23 @@
 [tool.poetry]
-name = "$svc"
+name = "tv-svc"
 version = "0.1.0"
-description = "DORA micro-service: $svc"
-authors = ["yujie <s323024@studenti.polito.it>"]
+description = "Smart TV interaction service (WebSocket push + VUI placeholder)"
+authors = ["DORA Project"]
+readme = "README.md"
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.111.0"
-uvicorn = {extras = ["standard"], version = "^0.30.1"}
+fastapi = "^0.110.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+paho-mqtt = ">=2.1,<3"
+redis = "^5.0.4"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.1"
+pytest = "^8.0.0"
+
+[tool.poetry.scripts]
+tv-svc = "app.main:run"
 
 [build-system]
 requires = ["poetry-core"]

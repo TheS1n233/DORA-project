@@ -7,7 +7,8 @@ echo "🆕  Generating skeleton for $svc → $dir"
 
 mkdir -p "$dir/app/api" "$dir/app/core" "$dir/app/models" "$dir/tests"
 
-cat > "$dir/app/main.py" <<'PY'
+cat > "$dir/app/main.py" <<PY
+
 from fastapi import FastAPI
 
 def create_app() -> FastAPI:
@@ -22,7 +23,8 @@ def create_app() -> FastAPI:
 app = create_app()
 PY
 
-cat > "$dir/pyproject.toml" <<'TOML'
+cat > "$dir/pyproject.toml" <<TOML
+
 [tool.poetry]
 name = "$svc"
 version = "0.1.0"
@@ -42,19 +44,18 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 TOML
 
-cat > "$dir/Dockerfile" <<'DOCKER'
+cat > "$dir/Dockerfile" <<DOCKER
 FROM python:3.11-slim
 WORKDIR /app
 
 ENV POETRY_VIRTUALENVS_CREATE=false \
     POETRY_CACHE_DIR=/var/cache/pypoetry
-:3.11-slim
-WORKDIR /app
-COPY pyproject.toml .
+
 RUN pip install poetry && poetry install --no-interaction --no-root
 COPY app ./app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 DOCKER
+
 
 cat > "$dir/tests/test_ping.py" <<'PY'
 from fastapi.testclient import TestClient

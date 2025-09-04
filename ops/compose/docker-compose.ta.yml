@@ -1,0 +1,24 @@
+services:
+  tele-assist-svc:
+    container_name: compose-tele-assist-svc
+    image: compose-tele-assist-svc
+    build:
+      context: ../../server/tele-assist-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8300:8300"
+    # Load LIVEKIT_URL / LIVEKIT_KEY / LIVEKIT_SECRET from repo root .env
+    env_file:
+      - ../../.env
+    environment:
+      PORT: "8300"
+      NODE_ENV: "production"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8300/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    # If you want live reload during dev, mount the folder (optional):
+    # volumes:
+    #   - ../../server/tele-assist-svc/app:/app/app

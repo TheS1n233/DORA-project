@@ -1,12 +1,30 @@
+# English comments only
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# let Poetry be installed on the system layer, and uvicorn can directly place PATH
-ENV POETRY_VIRTUALENVS_CREATE=false \
-    POETRY_CACHE_DIR=/var/cache/pypoetry
+RUN pip install --no-cache-dir poetry==1.8.3
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir poetry && poetry install --no-interaction --no-root
+# copy only pyproject first to leverage docker cache
+COPY pyproject.toml /app/
 
-COPY app ./app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ensure a fresh lock is created to avoid mismatch errors
+RUN poetry config virtualenvs.create false \
+ && (poetry lock --no-update || poetry lock) \
+ && poetry install --no-interaction --no-ansi --no-root
+
+# then copy the rest
+COPY app /app/app
+COPY static /app/static
+
+ENV TV_HOST=0.0.0.0 \
+    TV_PORT=8200
+
+EXPOSE 8200
+CMD ["python","-c","import app.main as m; m.run()"]

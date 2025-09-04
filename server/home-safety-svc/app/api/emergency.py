@@ -1,50 +1,28 @@
 # English comments only
 from __future__ import annotations
 
+import os
 import time
 from typing import Optional
 
-from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
-
+from fastapi import APIRouter, Body
 from ..core.redis import get_redis
 from ..notify.telegram import notify
 
 router = APIRouter(prefix="/emergency", tags=["emergency"])
 
 
-class EmergencyIn(BaseModel):
-    """Request payload to trigger emergency."""
-
-    message: Optional[str] = Field(default=None, description="Optional message")
-
-
-class EmergencyResult(BaseModel):
-    ok: bool
-    ts: int
-
-
-@router.post(
-    "/trigger",
-    response_model=EmergencyResult,
-    status_code=status.HTTP_200_OK,
-    summary="Trigger an emergency escalation",
-)
-def trigger_emergency(payload: EmergencyIn | None = None) -> EmergencyResult:
-    """Store an emergency event and send high-priority notification."""
+@router.post("/trigger")
+def trigger_emergency(message: Optional[str] = Body(default=None, embed=True)) -> dict:
     ts = int(time.time())
-    msg = (payload.message if payload else "") or ""
-    get_redis().xadd(
-        "safety_events",
-        {
-            "ts": ts,
-            "kind": "emergency",
-            "action": "trigger",
-            "source": "api",
-            "message": msg,
-        },
-    )
-    notify(
-        f"Emergency triggered: {msg}" if msg else "Emergency triggered", priority="high"
-    )
-    return EmergencyResult(ok=True, ts=ts)
+    stream = os.getenv("SAFETY_STREAM", "safety_events")
+    try:
+        get_redis().xadd(stream, {
+            "ts": ts, "kind": "emergency", "action": "trigger", "source": "rest",
+            "message": (message or "").strip(),
+        })
+    except Exception as e:
+        print(f"[emergency] redis xadd failed: {e}")
+    text = f"Emergency triggered: {message.strip()}" if message else "Emergency triggered"
+    notify(text, priority="high")
+    return {"ok": True, "ts": ts}

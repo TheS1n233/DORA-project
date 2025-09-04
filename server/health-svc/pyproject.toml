@@ -1,20 +1,21 @@
 [tool.poetry]
 name = "health-svc"
 version = "0.1.0"
-description = "DORA micro-service: health-svc"
+description = "DORA micro-service: health monitoring"
 authors = ["yujie <s323024@studenti.polito.it>"]
+
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.111.0"
-pydantic = "^2.8.0"
 uvicorn = {extras = ["standard"], version = "^0.30.1"}
 redis = "^5.0.4"
-paho-mqtt = "^1.6.1"
-cryptography = "^42.0.8"
+paho-mqtt = ">=2.1,<3"
+cryptography = "^42.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.1"
+pytest = "^8.4.1"
 
 [build-system]
 requires = ["poetry-core"]

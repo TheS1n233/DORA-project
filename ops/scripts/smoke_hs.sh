@@ -1,14 +1,15 @@
 set -euo pipefail
 
-echo "waiting svc …"
-for i in {1..15}; do
-  if curl -sf http://localhost:8001/ping >/dev/null; then break; fi
-  sleep 2
+echo "waiting hs svc on :8000 …"
+for i in {1..30}; do
+  if curl -sf http://127.0.0.1:8000/ping >/dev/null; then break; fi
+  sleep 1
 done
 echo "✅ ping ok"
 
-echo "detect-fall (sample_stand)"
-curl -sf -F "img=@server/home-safety-svc/tests/resources/sample_stand.jpg" \
-     http://localhost:8001/detect-fall | tee /tmp/out.json
-grep -q '"fall":[[:space:]]*false' /tmp/out.json && echo "✅ fall=false" || {
-  echo "❌ fall result unexpected"; exit 1; }
+echo "POST /falls (normal angles) → expect fall=false"
+resp=$(curl -sf -X POST http://127.0.0.1:8000/falls \
+  -H 'Content-Type: application/json' \
+  -d '{"angles":[150,148,152,149,151,150,149,150], "source":"smoke"}')
+echo "$resp" | tee /tmp/out.json
+grep -q '"fall":[[:space:]]*false' /tmp/out.json && echo "✅ fall=false" || { echo "❌ unexpected fall result"; exit 1; }

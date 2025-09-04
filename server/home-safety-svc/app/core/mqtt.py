@@ -28,7 +28,11 @@ def _get_client() -> mqtt.Client:
     return _client
 
 
-def publish_fall(flag: bool, angles: list[float] | None = None) -> None:
+def publish_fall(
+    flag: bool,
+    angles: list[float] | None = None,
+    method: str = "cv-knee-angle",
+) -> None:
     """Publish fall event JSON to the fixed topic."""
     topic = os.getenv("MQTT_TOPIC_FALL", "fall/detected")
     qos = int(os.getenv("MQTT_QOS", "0"))
@@ -38,6 +42,6 @@ def publish_fall(flag: bool, angles: list[float] | None = None) -> None:
         "ts": int(time.time()),
         "fall": flag,
         "angles": angles or [],
-        "method": "cv-knee-angle",
+        "method": method,
     }
     _get_client().publish(topic, json.dumps(payload), qos=qos, retain=retain)

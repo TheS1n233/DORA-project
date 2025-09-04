@@ -1,0 +1,21 @@
+services:
+  client-web:
+    build:
+      context: ../../client
+    image: dora-client:dev
+    container_name: dora-client
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_TV_WS=ws://tv-svc:8200/ws/room
+      - VITE_TA_API=http://tele-assist-svc:8300
+    depends_on:
+      - tv-svc
+      - tele-assist-svc
+    networks:
+      - dora_net
+
+networks:
+  dora_net:
+    external: true
+    name: dora_net

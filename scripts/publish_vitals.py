@@ -19,7 +19,10 @@ def main() -> None:
     port = int(os.getenv("MQTT_PORT", "1883"))
     keepalive = int(os.getenv("MQTT_KEEPALIVE", "60"))
 
-    c = mqtt.Client(client_id=f"publish-vitals-{int(time.time())}")
+    c = mqtt.Client(
+        client_id=f"publish-vitals-{int(time.time())}",
+        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    )
     user = os.getenv("MQTT_USER")
     pwd = os.getenv("MQTT_PASS")
     if user:
@@ -28,11 +31,8 @@ def main() -> None:
 
     for i in range(max(1, args.count)):
         payload = {
-            "ts": int(time.time()),
-            "metric": args.metric,
-            "value": float(args.value),
-            "unit": args.unit,
-            "source": "script",
+            "ts": int(time.time()), "metric": args.metric, "value": float(args.value),
+            "unit": args.unit, "source": "script",
         }
         c.publish("vitals/ingest", json.dumps(payload))
         print(f"[publish_vitals] vitals/ingest {payload}")

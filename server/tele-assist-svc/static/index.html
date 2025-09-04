@@ -1,0 +1,226 @@
+<!doctype html>
+<!-- English comments only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DORA • Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="/static/style.css" rel="stylesheet"/>
+    <style>
+      /* English comments only */
+      .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+      .bar input{padding:8px 10px;background:#0e141b;color:#e6edf3;border:1px solid #1d2733;border-radius:8px;min-width:220px}
+      .bar button{padding:8px 12px;background:#182433;color:#e6edf3;border:1px solid #243347;border-radius:10px;cursor:pointer}
+      .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+      .card{background:#131a22;border:1px solid #1c2633;border-radius:12px;padding:12px}
+      .card .title{font-weight:700;margin-bottom:6px}
+      .badge{padding:2px 6px;border-radius:6px;font-size:12px;margin-left:6px}
+      .badge.ok{background:rgba(107,211,141,.15);color:#6bd38d}
+      .badge.warn{background:rgba(255,204,102,.15);color:#ffcc66}
+      .badge.err{background:rgba(255,107,107,.15);color:#ff6b6b}
+      /* embed pane */
+      #callEmbed{display:none;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #1c2633}
+      #callEmbed iframe{width:100%;height:60vh;border:0}
+      label.small{display:flex;align-items:center;gap:6px;font-size:13px;opacity:.85}
+      /* keep checkbox and related buttons in one row */
+      .care-ops{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap}
+      .statusline{margin-top:2px;margin-bottom:10px;opacity:.9}
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="brand">DORA • Console</div>
+        <div class="status"><span id="wsState">WS: disconnected</span></div>
+      </header>
+
+      <section class="bar">
+        <input id="room" type="text" placeholder="demo" />
+        <input id="url"  type="text" placeholder="/static/sample.mp4" />
+        <button id="join">Join</button>
+        <button id="load">Load</button>
+        <button id="play">Play</button>
+        <button id="pause">Pause</button>
+        <button id="sync">Sync</button>
+
+        <!-- caregiver ops: checkbox stays close to buttons -->
+        <div class="care-ops">
+          <label class="small"><input id="embedChk" type="checkbox"/> Embed</label>
+          <button id="startCallBtn">Start Call</button>
+          <button id="joinCallBtn">Join Call as Caregiver</button>
+          <button id="hangCallBtn">Hang up</button>
+        </div>
+      </section>
+
+      <!-- call status line -->
+      <div id="callStatus" class="statusline"></div>
+
+      <section class="cards" id="cards"></section>
+
+      <!-- optional embed area -->
+      <div id="callEmbed"></div>
+
+      <footer class="foot">
+        <small>This console connects to tv-svc /ws/room and broadcasts co-watch commands.</small>
+      </footer>
+    </div>
+
+    <script>
+      // English comments only
+      const $ = (s)=>document.querySelector(s);
+      const cards = $("#cards");
+      const wsState = $("#wsState");
+      const inputRoom = $("#room");
+      const inputUrl  = $("#url");
+      const btnJoin  = $("#join");
+      const btnLoad  = $("#load");
+      const btnPlay  = $("#play");
+      const btnPause = $("#pause");
+      const btnSync  = $("#sync");
+
+      // caregiver controls
+      const btnStartCall = $("#startCallBtn");
+      const btnJoinCall  = $("#joinCallBtn");
+      const btnHangCall  = $("#hangCallBtn");
+      const embedChk     = $("#embedChk");
+      const callEmbed    = $("#callEmbed");
+      const callStatus   = $("#callStatus");
+
+      const LS = { room:"ta_room", url:"ta_url", tv:"ta_tv", last:"ta_last_call" };
+
+      let wsRoom = null;
+      let lastCallUrl = localStorage.getItem(LS.last) || null;
+
+      function addCard(title, body, badge) {
+        const el = document.createElement("div");
+        el.className = "card";
+        const b = badge || "";
+        const cls = (b==="ERR"?"err":(b==="WARN"?"warn":"ok"));
+        const content = (typeof body === "string") ? body : JSON.stringify(body, null, 2);
+        el.innerHTML = `<div class="title">${title}<span class="badge ${cls}">${b}</span></div>
+        <div class="body"><pre style="white-space:pre-wrap;margin:0">${content}</pre></div>`;
+        cards.prepend(el);
+      }
+      function setState(ok){ wsState.textContent = ok ? "WS: connected" : "WS: disconnected"; }
+      function remember(k,v){ try{ localStorage.setItem(k,v) }catch{} }
+      function recall(k,d=""){ try{ return localStorage.getItem(k) ?? d }catch{ return d } }
+      function setCallStatus(text){ try{ callStatus.textContent = text || ""; } catch{} }
+
+      function tvRoomUrl() {
+        const host = location.hostname || "127.0.0.1";
+        const tv   = `ws://${host}:8200/ws/room`;
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        return `${tv}?room=${encodeURIComponent(room)}`;
+      }
+      function defaultMeetUrl() {
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        return `https://meet.jit.si/dora-${encodeURIComponent(room)}`;
+      }
+      function updateLastCallUrl(urlMaybe) {
+        const url = urlMaybe || defaultMeetUrl();
+        lastCallUrl = url;
+        remember(LS.last, url);
+        setCallStatus(`当前呼叫 URL：${url}`);
+      }
+
+      function join() {
+        if (wsRoom) try{wsRoom.close()}catch{}
+        const url = tvRoomUrl();
+        wsRoom = new WebSocket(url);
+        wsRoom.onopen  = ()=>{ addCard("JOIN",{url},"OK"); setState(true); };
+        wsRoom.onclose = ()=>{ addCard("JOIN","closed","WARN"); setState(false); };
+        wsRoom.onerror = ()=>{ addCard("JOIN","error","ERR"); };
+        wsRoom.onmessage = (ev)=>{
+          try{
+            const msg = JSON.parse(ev.data);
+            if (msg && msg.type === "cowatch") {
+              const p = (msg.payload && typeof msg.payload==="object") ? msg.payload : msg;
+              addCard("RECV", p, "MSG");
+              if (p && (p.action==="call" || p.action==="answer")) {
+                if (typeof p.url === "string" && p.url.length>0) updateLastCallUrl(p.url);
+                else updateLastCallUrl(null);
+                if (p.action === "answer") setCallStatus(`已应答，呼叫 URL：${lastCallUrl}`);
+                if (p.action === "call")   setCallStatus(`已发起呼叫（等待应答），呼叫 URL：${lastCallUrl}`);
+              }
+              if (p && p.action === "hang") {
+                setCallStatus("已挂断");
+                if (callEmbed) callEmbed.innerHTML = "";
+                callEmbed.style.display = "none";
+              }
+            }
+          }catch{}
+        }
+      }
+
+      function ensure(){ return wsRoom && wsRoom.readyState===WebSocket.OPEN; }
+      function send(payload){
+        if(!ensure()){ addCard("SEND","not connected","ERR"); return; }
+        try{ wsRoom.send(JSON.stringify(payload)); addCard("SEND",payload,"OK"); }
+        catch{ addCard("SEND","send failed","ERR"); }
+      }
+
+      btnJoin.onclick  = ()=>{ remember(LS.room, inputRoom.value||""); join(); };
+      btnLoad.onclick  = ()=>{ const u=(inputUrl.value||"").trim(); if(!u){addCard("LOAD","empty url","ERR");return;} remember(LS.url,u); send({action:"load",url:u}); send({action:"state?"}); };
+      btnPlay.onclick  = ()=> send({action:"play",  play:true});
+      btnPause.onclick = ()=> send({action:"pause", play:false});
+      btnSync.onclick  = ()=> send({action:"state?"});
+
+      // REST helpers to call TA endpoints (same-origin)
+      async function apiStartCall() {
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        const url  = lastCallUrl || defaultMeetUrl();
+        setCallStatus("正在发起呼叫…");
+        try{
+          const res = await fetch("/api/call/start", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({room, url})
+          });
+          const j = await res.json().catch(()=>({}));
+          addCard("API /call/start", j, res.ok ? "OK" : "ERR");
+          if (res.ok) updateLastCallUrl(url);
+        }catch(e){ addCard("API /call/start", String(e), "ERR"); }
+      }
+      async function apiHangCall() {
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        setCallStatus("正在挂断…");
+        try{
+          const res = await fetch("/api/call/hang", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({room})
+          });
+          const j = await res.json().catch(()=>({}));
+          addCard("API /call/hang", j, res.ok ? "OK" : "ERR");
+          setCallStatus("已挂断");
+          if (callEmbed) callEmbed.innerHTML = "";
+          callEmbed.style.display = "none";
+        }catch(e){ addCard("API /call/hang", String(e), "ERR"); }
+      }
+
+      // buttons
+      btnStartCall.onclick = ()=> apiStartCall();
+      btnHangCall.onclick  = ()=> apiHangCall();
+      btnJoinCall.onclick  = ()=>{
+        const url = lastCallUrl || defaultMeetUrl();
+        if (embedChk && embedChk.checked) {
+          callEmbed.style.display = "block";
+          callEmbed.innerHTML = `<iframe src="${url}" allow="camera; microphone; display-capture; autoplay"></iframe>`;
+          addCard("CALL","embed join","OK");
+          setCallStatus(`已嵌入会议：${url}`);
+        } else {
+          window.open(url, "_blank", "noopener");
+          addCard("CALL",{open:url},"OK");
+          setCallStatus(`已在新标签页打开：${url}`);
+        }
+      };
+
+      (function init(){
+        inputRoom.value = recall(LS.room, (new URLSearchParams(location.search).get("room")||""));
+        inputUrl.value  = recall(LS.url, "");
+        if (inputRoom.value) join();
+        if (lastCallUrl) setCallStatus(`当前呼叫 URL：${lastCallUrl}`);
+      })();
+    </script>
+  </body>
+</html>
