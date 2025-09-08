@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from .routes.livekit import router as livekit_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -26,10 +27,13 @@ app.include_router(livekit_router, prefix="/tele/livekit")
 _static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
+
 @app.get("/whoami")
 def whoami():
     import app as _pkg
+
     return {"service": "ta", "import_path": getattr(_pkg, "__file__", "")}
+
 
 @app.get("/")
 def index():
@@ -60,15 +64,21 @@ def health_ready():
 
 def run():
     import uvicorn
+
     host = os.getenv("TA_HOST", "0.0.0.0")
     port = int(os.getenv("TA_PORT", "8300"))
-    uvicorn.run("app.main:app", host=host, port=port, reload=os.getenv("RELOAD", "0") == "1")
+    uvicorn.run(
+        "app.main:app", host=host, port=port, reload=os.getenv("RELOAD", "0") == "1"
+    )
+
 
 # --- BEGIN PATCH (tele-assist mount /api/intent) ---
 from app.api import intent as _intent_api  # noqa: E402
+
 app.include_router(_intent_api.router)
 # --- END PATCH ---
 from .api.call import router as call_router
+
 app.include_router(call_router)
 
 if __name__ == "__main__":

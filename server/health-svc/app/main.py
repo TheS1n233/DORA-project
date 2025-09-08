@@ -72,10 +72,13 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(_api_vitals.router)
 app.include_router(_api_export.router)
 
+
 @app.get("/whoami")
 def whoami():
     import app as _pkg
+
     return {"service": "hm", "import_path": getattr(_pkg, "__file__", "")}
+
 
 @app.get("/ping")
 def ping():
@@ -90,6 +93,7 @@ def health_live():
 @app.get("/health/ready")
 def health_ready():
     import os
+
     ok_redis = False
     ok_dns = False
     sched = _scheduler_task is not None
@@ -120,9 +124,11 @@ def health_ready():
         "metrics": metrics,
     }
 
+
 # English comments only
-def create_app(enable_subscriber: Optional[bool] = None,
-               enable_scheduler: Optional[bool] = None) -> FastAPI:
+def create_app(
+    enable_subscriber: Optional[bool] = None, enable_scheduler: Optional[bool] = None
+) -> FastAPI:
     """
     Factory to create app instance with optional background features switched.
     """

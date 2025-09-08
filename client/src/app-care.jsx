@@ -1,3 +1,4 @@
+// client/src/app-care.jsx
 // English comments only
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -5,10 +6,11 @@ import CaregiverPage from './routes/CaregiverPage.jsx';
 import AuthGate from './components/AuthGate.jsx';
 import LogoutButton from './components/LogoutButton.jsx';
 import { CARE_ROLES } from './lib/roles.js';
-import WsProvider from './components/WsProvider.jsx';
+import { WsProvider } from "./components/WsProvider.jsx";
 import WsStatusChip from './components/WsStatusChip.jsx';
+import WsOverlay from "./lib/WsOverlay.jsx";
 
-function AppCare() {
+export default function AppCare() {
   // Use HashRouter to keep URL under /care.html#/
   return (
     <HashRouter>
@@ -16,6 +18,7 @@ function AppCare() {
         <WsProvider base="/ws" defaultRoom="demo">
           <LogoutButton label="Logout" />
           <WsStatusChip align="right" />
+          <WsOverlay anchor="top-right" /> {/* small debug HUD, harmless in prod */}
           <Routes>
             <Route path="/" element={<CaregiverPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -25,5 +28,3 @@ function AppCare() {
     </HashRouter>
   );
 }
-
-export default AppCare;

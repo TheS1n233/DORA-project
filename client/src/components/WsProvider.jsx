@@ -1,120 +1,87 @@
+// client/src/components/WsProvider.jsx
 // English comments only
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-const WsCtx = createContext(null);
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-export function useWs() {
-  return useContext(WsCtx);
-}
+const Ctx = createContext(null);
 
-function pickRoom() {
-  try {
-    const raw = (localStorage.getItem('dora_user') || sessionStorage.getItem('dora_user'));
-    if (raw) {
-      const u = JSON.parse(raw);
-      if (u && u.room_id) return String(u.room_id);
-    }
-  } catch {}
-  return 'demo';
-}
-
-function buildUrl(base, room) {
-  if (base.startsWith('ws://') || base.startsWith('wss://')) {
-    const q = base.includes('?') ? '&' : '?';
-    return `${base}${q}room=${encodeURIComponent(room)}`;
-  }
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  return `${proto}://${location.host}${base}?room=${encodeURIComponent(room)}`;
-}
-
-export default function WsProvider({ base = '/ws', defaultRoom = 'demo', children }) {
-  const [status, setStatus] = useState('disconnected');
-  const [room, setRoom] = useState(pickRoom() || defaultRoom);
-  const [lastMessage, setLastMessage] = useState(null);
+export function WsProvider({ base = "/ws", defaultRoom = "demo", children }) {
   const wsRef = useRef(null);
-  const retryRef = useRef(0);
+  const manualCloseRef = useRef(false);
+  const reconnectTimerRef = useRef(null);
+
+  const [status, setStatus] = useState("idle"); // idle | connecting | open | closed
+  const [room, setRoom] = useState(defaultRoom);
+  const [lastMessage, setLastMessage] = useState(null);
+  const [connectTick, setConnectTick] = useState(0); // bump to force reconnect
 
   useEffect(() => {
-    let alive = true;
-
-    function connect() {
-      if (!alive) return;
-      setStatus('connecting');
-      const url = buildUrl(base, room || defaultRoom);
-      try {
-        const ws = new WebSocket(url);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-          if (!alive) return;
-          retryRef.current = 0;
-          setStatus('connected');
-        };
-
-        ws.onmessage = (evt) => {
-          if (!alive) return;
-          try {
-            const msg = JSON.parse(evt.data);
-            setLastMessage(msg);
-            const t = String(msg?.type || '');
-            const data = msg.data || msg;
-
-            if (t === 'vitals/ingest') {
-              try { window.dispatchEvent(new CustomEvent('dora:vitals', { detail: data })); } catch {}
-            }
-            if (t === 'fall/detected') {
-              try {
-                window.dispatchEvent(new CustomEvent('dora:fall', { detail: data }));
-                window.dispatchEvent(new CustomEvent('dora:alert', {
-                  detail: {
-                    level: 'high',
-                    title: 'Fall detected',
-                    message: data?.location ? `Location: ${data.location}` : 'Please check immediately.',
-                    at: Date.now()
-                  }
-                }));
-              } catch {}
-            }
-
-            // environment events -> one channel
-            if (t.startsWith('env/')) {
-              try { window.dispatchEvent(new CustomEvent('dora:env', { detail: { type: t, data } })); } catch {}
-            }
-          } catch {}
-        };
-
-        ws.onclose = () => {
-          if (!alive) return;
-          setStatus('disconnected');
-          const delay = Math.min(30000, 1000 * Math.pow(2, retryRef.current++));
-          setTimeout(connect, delay);
-        };
-
-        ws.onerror = () => {};
-      } catch {
-        setStatus('disconnected');
-        setTimeout(connect, 2000);
-      }
+    if (wsRef.current) {
+      try { wsRef.current.close(); } catch {}
+      wsRef.current = null;
     }
+    manualCloseRef.current = false;
+    if (!room) return;
 
-    connect();
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    const basePath = base.startsWith("/") ? base : `/${base}`;
+    const url = `${proto}://${location.host}${basePath}?room=${encodeURIComponent(room)}`;
+
+    setStatus("connecting");
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setStatus("open");
+      try { ws.send(JSON.stringify({ type: "hello", room })); } catch {}
+    };
+    ws.onmessage = (evt) => {
+      try { setLastMessage(JSON.parse(evt.data)); }
+      catch { setLastMessage({ type: "text", data: evt.data }); }
+    };
+    ws.onerror = () => { setStatus("closed"); };
+    ws.onclose = () => {
+      setStatus("closed");
+      wsRef.current = null;
+      if (!manualCloseRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = setTimeout(() => setConnectTick(t => t + 1), 2000);
+      }
+    };
+
     return () => {
-      alive = false;
-      try { wsRef.current && wsRef.current.close(); } catch {}
+      clearTimeout(reconnectTimerRef.current);
+      try { ws.close(); } catch {}
     };
-  }, [base, room, defaultRoom]);
+  }, [room, base, connectTick]);
 
-  const api = useMemo(() => {
-    return {
-      status,
-      room,
-      lastMessage,
-      send: (payload) => {
-        try { wsRef.current?.send(JSON.stringify(payload)); } catch {}
-      },
-      setRoom,
-    };
-  }, [status, room, lastMessage]);
+  const send = (payload) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify(payload));
+  };
 
-  return <WsCtx.Provider value={api}>{children}</WsCtx.Provider>;
+  const disconnect = () => {
+    manualCloseRef.current = true;
+    try { wsRef.current?.close(); } catch {}
+    setStatus("idle");
+  };
+
+  const connect = () => {
+    manualCloseRef.current = false;
+    setConnectTick(t => t + 1);
+  };
+
+  const value = useMemo(() => ({
+    status, room, lastMessage,
+    setRoom, send, disconnect, connect
+  }), [status, room, lastMessage]);
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function useWs() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useWs must be used within WsProvider");
+  return ctx;
 }

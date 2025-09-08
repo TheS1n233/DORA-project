@@ -24,13 +24,41 @@ def test_export_fhir_bundle(monkeypatch):
     now = int(time.time())
     # Two vitals (hr/spo2) envelopes; decrypted payloads provided via monkeypatch
     items = [
-        ("1-0", {"ts": str(now - 10), "blob": json.dumps({"enc": "none", "json": json.dumps({"metric": "hr", "value": 130, "unit": "bpm"})})}),
-        ("2-0", {"ts": str(now - 5), "blob": json.dumps({"enc": "none", "json": json.dumps({"metric": "spo2", "value": 88, "unit": "%"})})}),
+        (
+            "1-0",
+            {
+                "ts": str(now - 10),
+                "blob": json.dumps(
+                    {
+                        "enc": "none",
+                        "json": json.dumps(
+                            {"metric": "hr", "value": 130, "unit": "bpm"}
+                        ),
+                    }
+                ),
+            },
+        ),
+        (
+            "2-0",
+            {
+                "ts": str(now - 5),
+                "blob": json.dumps(
+                    {
+                        "enc": "none",
+                        "json": json.dumps(
+                            {"metric": "spo2", "value": 88, "unit": "%"}
+                        ),
+                    }
+                ),
+            },
+        ),
     ]
     fake = _FakeRedis(items)
     monkeypatch.setattr(api_export, "get_redis", lambda: fake)
 
-    client = TestClient(main.create_app(enable_subscriber=False, enable_scheduler=False))
+    client = TestClient(
+        main.create_app(enable_subscriber=False, enable_scheduler=False)
+    )
     r = client.get("/export/fhir", params={"since": now - 3600, "limit": 10})
     assert r.status_code == 200
     body = r.json()
@@ -43,18 +71,62 @@ def test_export_fhir_bundle(monkeypatch):
     assert "effectiveDateTime" in obs
     assert "valueQuantity" in obs and "value" in obs["valueQuantity"]
 
+
 def test_export_metric_filter(monkeypatch):
     now = int(time.time())
     items = [
-        ("1-0", {"ts": str(now - 10), "blob": json.dumps({"enc": "none", "json": json.dumps({"metric": "hr", "value": 90, "unit": "bpm"})})}),
-        ("2-0", {"ts": str(now - 5), "blob": json.dumps({"enc": "none", "json": json.dumps({"metric": "spo2", "value": 96, "unit": "%"})})}),
-        ("3-0", {"ts": str(now - 3), "blob": json.dumps({"enc": "none", "json": json.dumps({"metric": "glucose", "value": 150, "unit": "mgdl"})})}),
+        (
+            "1-0",
+            {
+                "ts": str(now - 10),
+                "blob": json.dumps(
+                    {
+                        "enc": "none",
+                        "json": json.dumps(
+                            {"metric": "hr", "value": 90, "unit": "bpm"}
+                        ),
+                    }
+                ),
+            },
+        ),
+        (
+            "2-0",
+            {
+                "ts": str(now - 5),
+                "blob": json.dumps(
+                    {
+                        "enc": "none",
+                        "json": json.dumps(
+                            {"metric": "spo2", "value": 96, "unit": "%"}
+                        ),
+                    }
+                ),
+            },
+        ),
+        (
+            "3-0",
+            {
+                "ts": str(now - 3),
+                "blob": json.dumps(
+                    {
+                        "enc": "none",
+                        "json": json.dumps(
+                            {"metric": "glucose", "value": 150, "unit": "mgdl"}
+                        ),
+                    }
+                ),
+            },
+        ),
     ]
     fake = _FakeRedis(items)
     monkeypatch.setattr(api_export, "get_redis", lambda: fake)
 
-    client = TestClient(main.create_app(enable_subscriber=False, enable_scheduler=False))
-    r = client.get("/export/fhir", params={"since": now - 3600, "limit": 10, "metric": "hr,spo2"})
+    client = TestClient(
+        main.create_app(enable_subscriber=False, enable_scheduler=False)
+    )
+    r = client.get(
+        "/export/fhir", params={"since": now - 3600, "limit": 10, "metric": "hr,spo2"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["total"] == 2

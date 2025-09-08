@@ -54,13 +54,10 @@ def load_config() -> HMConfig:
         NO_MEASURE_WINDOW_MIN=_get_env_int("NO_MEASURE_WINDOW_MIN", 180),
         HR_ALERT_COOLDOWN_MIN=_get_env_int("HR_ALERT_COOLDOWN_MIN", 10),
         REMINDER_COOLDOWN_MIN=_get_env_int("REMINDER_COOLDOWN_MIN", 30),
-
         SPO2_LOW=_get_env_int("SPO2_LOW", 92),  # alert if <= 92%
         SPO2_ALERT_COOLDOWN_MIN=_get_env_int("SPO2_ALERT_COOLDOWN_MIN", 10),
-
         TEMP_HIGH=_get_env_float("TEMP_HIGH", 38.0),  # Celsius, fever threshold
         TEMP_ALERT_COOLDOWN_MIN=_get_env_int("TEMP_ALERT_COOLDOWN_MIN", 30),
-
         START_SUBSCRIBER=_get_env_bool("START_SUBSCRIBER", True),
         START_SCHEDULER=_get_env_bool("START_SCHEDULER", True),
         DAILY_SUMMARY_AT=os.getenv("DAILY_SUMMARY_AT", "23:00"),

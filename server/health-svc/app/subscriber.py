@@ -13,6 +13,8 @@ from redis import Redis
 from .core.config import HMConfig
 from .notify.telegram import notify
 from .metrics import inc, mark
+
+
 # English comments only
 def process_vitals(data: dict) -> dict:
     """
@@ -34,7 +36,13 @@ def process_vitals(data: dict) -> dict:
     unit = str(data.get("unit", ""))
     ts = int(data.get("ts") or now)
     source = str(data.get("source") or "api")
-    payload = {"metric": metric, "value": value, "unit": unit, "ts": ts, "source": source}
+    payload = {
+        "metric": metric,
+        "value": value,
+        "unit": unit,
+        "ts": ts,
+        "source": source,
+    }
 
     # Decide critical by simple thresholds (ENV overrides)
     hr_high = float(os.getenv("HR_HIGH", "120"))
@@ -58,11 +66,16 @@ def process_vitals(data: dict) -> dict:
             key = bytes.fromhex(key_raw)
         if len(key) != 32:
             # Fallback to plaintext if key invalid
-            envelope = {"enc": "none", "json": json.dumps(payload, separators=(",", ":"))}
+            envelope = {
+                "enc": "none",
+                "json": json.dumps(payload, separators=(",", ":")),
+            }
         else:
             iv = secrets.token_bytes(12)
             aead = AESGCM(key)
-            ct = aead.encrypt(iv, json.dumps(payload, separators=(",", ":")).encode("utf-8"), None)
+            ct = aead.encrypt(
+                iv, json.dumps(payload, separators=(",", ":")).encode("utf-8"), None
+            )
             envelope = {
                 "enc": "aesgcm",
                 "iv": base64.b64encode(iv).decode(),
@@ -79,7 +92,9 @@ def process_vitals(data: dict) -> dict:
     # Optional notify on critical
     try:
         if critical:
-            notify(f"[HM] critical {metric}={value}{unit} from {source}", priority="high")
+            notify(
+                f"[HM] critical {metric}={value}{unit} from {source}", priority="high"
+            )
     except Exception as e:
         print(f"[hm] notify failed: {e}")
 
@@ -91,6 +106,7 @@ def process_vitals(data: dict) -> dict:
         pass
 
     return {"ok": True, "ts": ts, "critical": critical}
+
 
 _running = False
 _thread: Optional[threading.Thread] = None
@@ -124,7 +140,9 @@ def _connect_client() -> mqtt.Client:
     return c
 
 
-def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMessage) -> None:
+def _on_message(
+    cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMessage
+) -> None:
     global _last_msg_ts
     try:
         p = json.loads(msg.payload.decode("utf-8"))
@@ -149,7 +167,9 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
                     suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: hr={val:.1f} bpm{suffix}", priority="high")
+                    ok = notify(
+                        f"Health alert: hr={val:.1f} bpm{suffix}", priority="high"
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -172,7 +192,9 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
                     suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: spo2={val:.0f} {unit}{suffix}", priority="high")
+                    ok = notify(
+                        f"Health alert: spo2={val:.0f} {unit}{suffix}", priority="high"
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -196,7 +218,10 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
                     suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: temp={val:.1f} °{unit}{suffix}", priority="normal")
+                    ok = notify(
+                        f"Health alert: temp={val:.1f} °{unit}{suffix}",
+                        priority="normal",
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -226,7 +251,9 @@ def start(cfg: HMConfig, r: Redis) -> None:
     if _running:
         return
     _running = True
-    _thread = threading.Thread(target=_worker, args=(cfg, r), name="hm-subscriber", daemon=True)
+    _thread = threading.Thread(
+        target=_worker, args=(cfg, r), name="hm-subscriber", daemon=True
+    )
     _thread.start()
     print("[subscriber] started")
 

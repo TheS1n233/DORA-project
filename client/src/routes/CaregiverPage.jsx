@@ -7,6 +7,7 @@ import TvCompatBanner from '../components/TvCompatBanner.jsx';
 import FhirExportButton from '../components/FhirExportButton.jsx';
 import { fetchDevices } from '../lib/services/devices.js';
 import LiveKitPanel from '../components/LiveKitPanel.jsx';
+import WsSwitch from '../components/WsSwitch.jsx';
 
 export default function CaregiverPage() {
   const userName = useMemo(() => {
@@ -58,6 +59,8 @@ export default function CaregiverPage() {
         <div className="topbar">
           <input type="text" placeholder="Search" className="input max-w-md" />
           <div className="flex items-center space-x-3">
+            {/* WS local on/off switch */}
+            <WsSwitch />
             <span className={`badge ${wsBadge}`}>
               {status === 'connected' ? 'WS connected' : status === 'connecting' ? 'WS connecting' : 'WS disconnected'}
             </span>

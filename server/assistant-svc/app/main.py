@@ -1,5 +1,5 @@
 # English comments only
-import os, socket, asyncio
+import os, socket
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from .core.config import get_settings
@@ -7,16 +7,23 @@ from .api.assistant import router as assistant_router
 
 app = FastAPI(title="assistant-svc", version=get_settings().version)
 
+
 @app.get("/whoami")
 async def whoami():
     s = get_settings()
     return {"service": s.service_name, "version": s.version}
 
+
+# simple liveness endpoint for curl
+@app.get("/healthz")
+async def healthz():
+    return "ok"
+
+
 @app.get("/health/ready")
 async def ready():
     s = get_settings()
     errs = []
-    # dns check for tv-svc
     try:
         socket.gethostbyname(s.tv_host)
         tv_dns = True
@@ -31,8 +38,13 @@ async def ready():
         "errors": errs,
     }
 
+
 # routes
 app.include_router(assistant_router)
 
-# optional static (none for now)
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "static")), name="static")
+# optional static
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "static")),
+    name="static",
+)

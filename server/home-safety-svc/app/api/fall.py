@@ -26,6 +26,7 @@ STREAM_GROUP = os.getenv("FALLS_STREAM_GROUP", "falls_cg")  # consumer group nam
 
 class FallAnglesIn(BaseModel):
     """Request payload: knee-angle sequence from camera."""
+
     angles: List[float] = Field(..., min_items=1, description="Knee-angle list")
     ts: Optional[int] = Field(default_factory=lambda: int(time.time()))
     source: Optional[str] = Field(default=None, description="Optional source id")
@@ -33,6 +34,7 @@ class FallAnglesIn(BaseModel):
 
 class FallFrameIn(BaseModel):
     """Request payload: single frame in base64 (JPEG/PNG)."""
+
     image_b64: str = Field(..., description="Base64-encoded image (no data URI prefix)")
     ts: Optional[int] = Field(default_factory=lambda: int(time.time()))
     source: Optional[str] = Field(default=None, description="Optional source id")
@@ -40,6 +42,7 @@ class FallFrameIn(BaseModel):
 
 class FallResult(BaseModel):
     """API response."""
+
     fall: bool
     ts: int
 
@@ -86,7 +89,9 @@ def _ensure_stream_group(redis: Redis) -> None:
     status_code=status.HTTP_200_OK,
     summary="Analyze knee-angle sequence and push event if fall",
 )
-def analyse_fall(payload: FallAnglesIn, redis: Redis = Depends(get_redis)) -> FallResult:
+def analyse_fall(
+    payload: FallAnglesIn, redis: Redis = Depends(get_redis)
+) -> FallResult:
     """
     English comments only:
     - Validate payload length/range.

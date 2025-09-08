@@ -6,24 +6,34 @@ import time
 
 router = APIRouter()
 
+
 def _now_ts() -> int:
     return int(time.time())
+
 
 def _mgr(request: Request):
     # get the ws manager bound in app.main
     return getattr(request.app.state, "ws_manager", None)
 
+
 def _intent_to_action(text: str) -> str:
     # very small ruleset; keep consistent with intent_rules.py if used
     t = (text or "").strip().lower()
-    if t in ("play", "resume", "start"): return "play"
-    if t in ("pause", "stop"): return "pause"
-    if t.startswith("load "): return "load"
-    if t.startswith("seek "): return "seek"
+    if t in ("play", "resume", "start"):
+        return "play"
+    if t in ("pause", "stop"):
+        return "pause"
+    if t.startswith("load "):
+        return "load"
+    if t.startswith("seek "):
+        return "seek"
     return t or "noop"
 
+
 @router.post("/api/intent")
-async def post_intent(request: Request, broadcast: int = 1, cowatch: int = 0) -> JSONResponse:
+async def post_intent(
+    request: Request, broadcast: int = 1, cowatch: int = 0
+) -> JSONResponse:
     body: Dict = {}
     try:
         body = await request.json()
@@ -57,8 +67,10 @@ async def post_intent(request: Request, broadcast: int = 1, cowatch: int = 0) ->
     b_cowatch = False
     if cowatch and room and mgr:
         payload = {"action": action}
-        if url: payload["url"] = url
-        if position is not None: payload["position"] = position
+        if url:
+            payload["url"] = url
+        if position is not None:
+            payload["position"] = position
         msg = {
             "type": "cowatch",
             "room": room,
@@ -71,11 +83,13 @@ async def post_intent(request: Request, broadcast: int = 1, cowatch: int = 0) ->
             b_cowatch = False
 
     # 3) reply to caller
-    return JSONResponse({
-        "ok": True,
-        "intent": text,
-        "room": room,
-        "broadcast_intent":  1 if b_intent  else 0,
-        "broadcast_cowatch": 1 if b_cowatch else 0,
-        "action": action,
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "intent": text,
+            "room": room,
+            "broadcast_intent": 1 if b_intent else 0,
+            "broadcast_cowatch": 1 if b_cowatch else 0,
+            "action": action,
+        }
+    )

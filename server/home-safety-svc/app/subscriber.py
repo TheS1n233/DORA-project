@@ -88,7 +88,9 @@ def _handle_hazard(topic: str, payload: dict) -> None:
                             "source": source,
                             "data": payload,  # keep original fields, e.g., level
                         }
-                        _rds.xadd(stream, {"blob": json.dumps(event, separators=(",", ":"))})
+                        _rds.xadd(
+                            stream, {"blob": json.dumps(event, separators=(",", ":"))}
+                        )
                     except Exception as e:
                         print(f"[hs] redis xadd failed: {e}")
 
@@ -121,7 +123,9 @@ def _handle_hazard(topic: str, payload: dict) -> None:
                             "source": source,
                             "data": payload,
                         }
-                        _rds.xadd(stream, {"blob": json.dumps(event, separators=(",", ":"))})
+                        _rds.xadd(
+                            stream, {"blob": json.dumps(event, separators=(",", ":"))}
+                        )
                     except Exception as e:
                         print(f"[hs] redis xadd failed: {e}")
             else:
@@ -153,7 +157,9 @@ def _handle_hazard(topic: str, payload: dict) -> None:
                             "source": source,
                             "data": payload,  # e.g., {"state": "..."}
                         }
-                        _rds.xadd(stream, {"blob": json.dumps(event, separators=(",", ":"))})
+                        _rds.xadd(
+                            stream, {"blob": json.dumps(event, separators=(",", ":"))}
+                        )
                     except Exception as e:
                         print(f"[hs] redis xadd failed: {e}")
             else:

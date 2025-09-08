@@ -13,10 +13,12 @@ LK_URL = os.getenv("LK_URL", "")
 LK_API_KEY = os.getenv("LK_API_KEY", "")
 LK_API_SECRET = os.getenv("LK_API_SECRET", "")
 
+
 class TokenReq(BaseModel):
     room: Optional[str] = "demo"
     identity: Optional[str] = None  # stable user identity from client
     role: Optional[str] = "caregiver"  # optional; can be used for scopes
+
 
 @router.post("/token")
 def issue_token(req: TokenReq):

@@ -36,11 +36,13 @@
 │   │   ├── VoiceAssistantHUD.jsx
 │   │   ├── VoiceAssistantIcon.jsx
 │   │   ├── WsProvider.jsx
-│   │   └── WsStatusChip.jsx
+│   │   ├── WsStatusChip.jsx
+│   │   └── WsSwitch.jsx
 │   ├── entry-care.jsx
 │   ├── entry-tv.jsx
 │   ├── index.css
 │   ├── lib
+│   │   ├── WsOverlay.jsx
 │   │   ├── api.js
 │   │   ├── api_auth.js
 │   │   ├── auth.js
@@ -72,4 +74,4 @@
 ├── tv.html
 └── vite.config.js
 
-9 directories, 64 files
+9 directories, 66 files

@@ -45,7 +45,9 @@ def notify(msg: str, priority: str = "normal") -> bool:
         return False
 
     base = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = urllib.parse.urlencode({"chat_id": chat_id, "text": printable}).encode("utf-8")
+    payload = urllib.parse.urlencode({"chat_id": chat_id, "text": printable}).encode(
+        "utf-8"
+    )
     retries = 3
     for i in range(retries):
         try:

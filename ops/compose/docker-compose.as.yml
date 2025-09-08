@@ -9,6 +9,7 @@ services:
     env_file:
       - ../../.env
     environment:
+      ASSIST_WS_KEY:
       TV_HOSTNAME: ${TV_HOSTNAME:-tv-svc}
       TV_PORT: ${TV_PORT:-8200}
     ports:

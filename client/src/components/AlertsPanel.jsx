@@ -1,52 +1,45 @@
-// English comments only
-import React, { useEffect, useState } from 'react';
-import { fetchAlerts, ackAlert, escalateAlert } from '../lib/services/alerts.js';
+// src/components/AlertsPanel.jsx
+import React from "react";
 
-export default function AlertsPanel() {
-  const [items, setItems] = useState([]);
-  const [busy, setBusy] = useState({}); // {id:'ack'|'esc'}
+export default function AlertsPanel({
+  items,
+  onAck = () => {},
+  onEscalate = () => {},
+}) {
+  // 统一兜底：保证 list 一定是数组
+  const list = Array.isArray(items)
+    ? items
+    : items == null
+    ? []
+    : Array.isArray(items?.list)
+    ? items.list
+    : Array.isArray(items?.data)
+    ? items.data
+    : typeof items === "object"
+    ? Object.values(items)
+    : [];
 
-  async function load() {
-    const list = await fetchAlerts({ limit: 10 });
-    setItems(list);
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function onAck(id) {
-    setBusy((b) => ({ ...b, [id]: 'ack' }));
-    const r = await ackAlert(id);
-    setItems((arr) => arr.filter((x) => x.id !== id));
-    setBusy((b) => ({ ...b, [id]: undefined }));
-  }
-
-  async function onEsc(id) {
-    setBusy((b) => ({ ...b, [id]: 'esc' }));
-    const r = await escalateAlert(id);
-    setItems((arr) => arr.map((x) => (x.id === id ? { ...x, level: 'high', escalated: true } : x)));
-    setBusy((b) => ({ ...b, [id]: undefined }));
-  }
-
-  if (!items.length) {
-    return <div className="text-slate-500">No recent alerts.</div>;
+  if (!list.length) {
+    return <div className="card p-4 text-slate-500">No alerts.</div>;
   }
 
   return (
     <div className="space-y-3">
-      {items.map((a) => (
-        <div key={a.id} className="p-3 rounded-md border border-slate-200 bg-white flex items-center justify-between">
+      {list.map((a, idx) => (
+        <div key={a.id ?? idx} className="card flex items-center justify-between">
           <div>
-            <div className="font-medium">{a.type} {a.level ? `· ${a.level}` : ''}</div>
-            <div className="text-xs opacity-70">{a.note || new Date(a.at).toLocaleString()}</div>
+            <div className="font-medium">
+              {a.type ?? a.title ?? "alert"} · {a.level ?? a.severity ?? "info"}
+            </div>
+            <div className="text-sm text-slate-500">
+              {a.desc ?? a.description ?? a.message ?? "-"}
+            </div>
           </div>
+
           <div className="flex gap-2">
-            <button className="btn" disabled={busy[a.id]} onClick={() => onAck(a.id)}>
-              {busy[a.id] === 'ack' ? 'Acknowledging…' : 'Acknowledge'}
-            </button>
-            <button className="btn" disabled={busy[a.id]} onClick={() => onEsc(a.id)}>
-              {busy[a.id] === 'esc' ? 'Escalating…' : 'Escalate'}
+            <button className="btn" onClick={() => onAck(a)}>Acknowledge</button>
+            <button className="btn btn-secondary" onClick={() => onEscalate(a)}>
+              Escalate
             </button>
           </div>
         </div>

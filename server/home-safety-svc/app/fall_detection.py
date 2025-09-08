@@ -73,8 +73,9 @@ def detect_fall_frame(image_b64: str):
     def _angle(a, b, c):
         # a,b,c are (x,y); compute angle ABC in degrees
         import math
+
         ang = math.degrees(
-            math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0])
+            math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0])
         )
         ang = abs(ang)
         if ang > 180:
@@ -82,7 +83,9 @@ def detect_fall_frame(image_b64: str):
         return ang
 
     # static image mode for single frame
-    with mp_pose.Pose(static_image_mode=True, model_complexity=1, enable_segmentation=False) as pose:
+    with mp_pose.Pose(
+        static_image_mode=True, model_complexity=1, enable_segmentation=False
+    ) as pose:
         res = pose.process(rgb)
         if not res.pose_landmarks:
             return False
@@ -96,7 +99,11 @@ def detect_fall_frame(image_b64: str):
         l = (_pt(23), _pt(25), _pt(27))
 
         def _pick(a, b):
-            return a if (a[0][2]+a[1][2]+a[2][2]) >= (b[0][2]+b[1][2]+b[2][2]) else b
+            return (
+                a
+                if (a[0][2] + a[1][2] + a[2][2]) >= (b[0][2] + b[1][2] + b[2][2])
+                else b
+            )
 
         hip, knee, ankle = _pick(r, l)
         knee_deg = _angle((hip[0], hip[1]), (knee[0], knee[1]), (ankle[0], ankle[1]))

@@ -61,10 +61,13 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(fall_router)
 app.include_router(emergency_router)
 
+
 @app.get("/whoami")
 def whoami():
     import app as _pkg
+
     return {"service": "hs", "import_path": getattr(_pkg, "__file__", "")}
+
 
 @app.get("/ping")
 def ping():
@@ -89,7 +92,9 @@ def health_ready():
     except Exception:
         ok_redis = False
     try:
-        host = os.getenv("MQTT_HOST", "mosquitto")  # prefer env var, fallback to default
+        host = os.getenv(
+            "MQTT_HOST", "mosquitto"
+        )  # prefer env var, fallback to default
         socket.gethostbyname(host)
         ok_dns = True
     except Exception:

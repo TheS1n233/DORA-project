@@ -16,6 +16,8 @@ def _get_env_int(name: str, default: int) -> int:
         return int(os.getenv(name, str(default)))
     except Exception:
         return default
+
+
 # English comments only
 def _get_env_int_any(names: list[str], default: int) -> int:
     for n in names:
@@ -24,6 +26,7 @@ def _get_env_int_any(names: list[str], default: int) -> int:
         except Exception:
             continue
     return default
+
 
 def _get_env_bool_any(names: list[str], default: bool) -> bool:
     for n in names:
@@ -44,13 +47,22 @@ class HSConfig:
 
 def load_config() -> HSConfig:
     return HSConfig(
-        GAS_WARN_LEVEL=_get_env_int_any(["HS_GAS_WARN_LEVEL", "HAZARD_LEVEL_THRESHOLD"], 70),
-        COOLDOWN_GAS_MIN=_get_env_int_any(["HS_COOLDOWN_GAS_MIN", "COOLDOWN_GAS_MIN"], 5),
-        COOLDOWN_WATER_MIN=_get_env_int_any(["HS_COOLDOWN_WATER_MIN", "COOLDOWN_WATER_MIN"], 5),
-        COOLDOWN_POWER_MIN=_get_env_int_any(["HS_COOLDOWN_POWER_MIN", "COOLDOWN_POWER_MIN"], 10),
-        START_SUBSCRIBER=_get_env_bool_any(["HS_START_SUBSCRIBER", "START_SUBSCRIBER"], True),
+        GAS_WARN_LEVEL=_get_env_int_any(
+            ["HS_GAS_WARN_LEVEL", "HAZARD_LEVEL_THRESHOLD"], 70
+        ),
+        COOLDOWN_GAS_MIN=_get_env_int_any(
+            ["HS_COOLDOWN_GAS_MIN", "COOLDOWN_GAS_MIN"], 5
+        ),
+        COOLDOWN_WATER_MIN=_get_env_int_any(
+            ["HS_COOLDOWN_WATER_MIN", "COOLDOWN_WATER_MIN"], 5
+        ),
+        COOLDOWN_POWER_MIN=_get_env_int_any(
+            ["HS_COOLDOWN_POWER_MIN", "COOLDOWN_POWER_MIN"], 10
+        ),
+        START_SUBSCRIBER=_get_env_bool_any(
+            ["HS_START_SUBSCRIBER", "START_SUBSCRIBER"], True
+        ),
     )
-
 
 
 def print_config(cfg: HSConfig) -> None:

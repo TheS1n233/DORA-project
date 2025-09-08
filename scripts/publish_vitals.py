@@ -31,8 +31,11 @@ def main() -> None:
 
     for i in range(max(1, args.count)):
         payload = {
-            "ts": int(time.time()), "metric": args.metric, "value": float(args.value),
-            "unit": args.unit, "source": "script",
+            "ts": int(time.time()),
+            "metric": args.metric,
+            "value": float(args.value),
+            "unit": args.unit,
+            "source": "script",
         }
         c.publish("vitals/ingest", json.dumps(payload))
         print(f"[publish_vitals] vitals/ingest {payload}")

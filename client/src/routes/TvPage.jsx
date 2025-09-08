@@ -5,6 +5,7 @@ import RecommendationsCard from '../components/RecommendationsCard.jsx';
 import { getUser } from '../lib/auth.js';
 import AlertOverlay from '../components/AlertOverlay.jsx';
 import LiveKitPanel from '../components/LiveKitPanel.jsx';
+import WsSwitch from '../components/WsSwitch.jsx';
 
 export default function TvPage() {
   const { status, room, send } = useWs() || { status: 'disconnected', room: 'demo', send: () => {} };
@@ -102,6 +103,8 @@ export default function TvPage() {
         <div className="topbar">
           <input type="text" placeholder="Search" className="input max-w-md" />
           <div className="flex items-center space-x-3">
+            {/* WS local on/off switch */}
+            <WsSwitch />
             <span className={`badge ${wsBadge}`}>
               {status === 'connected' ? 'WS connected' : status === 'connecting' ? 'WS connecting' : 'WS disconnected'}
             </span>

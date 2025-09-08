@@ -25,10 +25,14 @@ def parse_since(expr: str) -> int:
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Export vitals to FHIR Bundle (JSON) via health-svc REST")
+    p = argparse.ArgumentParser(
+        description="Export vitals to FHIR Bundle (JSON) via health-svc REST"
+    )
     p.add_argument("--host", default="127.0.0.1", help="health-svc host")
     p.add_argument("--port", type=int, default=8100, help="health-svc port")
-    p.add_argument("--since", default="24h", help="time window, e.g. 24h/30m/2d or epoch seconds")
+    p.add_argument(
+        "--since", default="24h", help="time window, e.g. 24h/30m/2d or epoch seconds"
+    )
     p.add_argument("--limit", type=int, default=200, help="max records")
     p.add_argument("--out", default="out/fhir_export.json", help="output json path")
     args = p.parse_args()

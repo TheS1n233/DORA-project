@@ -166,6 +166,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 # --- BEGIN WS manager (bind to app.state.ws_manager) ---
 class _WSManager:
     # room-scoped broadcast; returns True for best-effort fire-and-forget
@@ -184,6 +185,7 @@ class _WSManager:
         except Exception:
             return False
 
+
 # expose to other routers (e.g. /api/intent)
 try:
     app.state.ws_manager = _WSManager()
@@ -194,10 +196,13 @@ except Exception:
 _static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
+
 @app.get("/whoami")
 def whoami():
     import app as _pkg
+
     return {"service": "tv", "import_path": getattr(_pkg, "__file__", "")}
+
 
 @app.get("/")
 def index():
@@ -284,14 +289,21 @@ async def ws_room(ws: WebSocket):
         bag = _ROOMS.setdefault(room, set())
         bag.add(ws)
     try:
-        await ws.send_text(json.dumps({"type": "hello-room", "room": room, "ts": int(time.time())}))
+        await ws.send_text(
+            json.dumps({"type": "hello-room", "room": room, "ts": int(time.time())})
+        )
         while True:
             raw = await ws.receive_text()
             try:
                 data = json.loads(raw)
             except Exception:
                 data = {"raw": raw}
-            event = {"type": "cowatch", "room": room, "payload": data, "ts": int(time.time())}
+            event = {
+                "type": "cowatch",
+                "room": room,
+                "payload": data,
+                "ts": int(time.time()),
+            }
             await _broadcast_room_async(room, event)
     except WebSocketDisconnect:
         pass
@@ -302,6 +314,7 @@ async def ws_room(ws: WebSocket):
                 bag.discard(ws)
                 if not bag:
                     _ROOMS.pop(room, None)
+
 
 # legacy echo endpoint is renamed to avoid shadowing the new /api/intent router
 @app.post("/api/intent_echo")
@@ -315,7 +328,6 @@ async def intent_echo(req: Request):
     return {"ok": True, "echo": text}
 
 
-
 @app.post("/api/stt")
 async def stt(req: Request):
     # English comments only
@@ -326,6 +338,7 @@ async def stt(req: Request):
     event = {"type": "stt", "text": transcript, "ts": int(time.time())}
     await _broadcast_async(event)
     return {"ok": True, "text": transcript}
+
 
 # --- BEGIN PATCH (tv-svc mount /api/intent) ---
 from app.api import intent as _intent_api  # noqa: E402
@@ -341,6 +354,9 @@ except Exception:
 def run():
     # English comments only
     import uvicorn
+
     host = os.getenv("TV_HOST", "0.0.0.0")
     port = int(os.getenv("TV_PORT", "8200"))
-    uvicorn.run("app.main:app", host=host, port=port, reload=os.getenv("RELOAD", "0") == "1")
+    uvicorn.run(
+        "app.main:app", host=host, port=port, reload=os.getenv("RELOAD", "0") == "1"
+    )

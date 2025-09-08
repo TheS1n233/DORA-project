@@ -31,7 +31,11 @@ def main() -> None:
 
     topic = f"hazard/{args.type}"
     for i in range(max(1, args.count)):
-        payload = {"ts": int(time.time()), "level": int(args.level), "source": args.source}
+        payload = {
+            "ts": int(time.time()),
+            "level": int(args.level),
+            "source": args.source,
+        }
         c.publish(topic, json.dumps(payload))
         print(f"[publish_hazard] {topic} {payload}")
         if i < args.count - 1:

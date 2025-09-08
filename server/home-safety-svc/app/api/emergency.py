@@ -17,12 +17,20 @@ def trigger_emergency(message: Optional[str] = Body(default=None, embed=True)) -
     ts = int(time.time())
     stream = os.getenv("SAFETY_STREAM", "safety_events")
     try:
-        get_redis().xadd(stream, {
-            "ts": ts, "kind": "emergency", "action": "trigger", "source": "rest",
-            "message": (message or "").strip(),
-        })
+        get_redis().xadd(
+            stream,
+            {
+                "ts": ts,
+                "kind": "emergency",
+                "action": "trigger",
+                "source": "rest",
+                "message": (message or "").strip(),
+            },
+        )
     except Exception as e:
         print(f"[emergency] redis xadd failed: {e}")
-    text = f"Emergency triggered: {message.strip()}" if message else "Emergency triggered"
+    text = (
+        f"Emergency triggered: {message.strip()}" if message else "Emergency triggered"
+    )
     notify(text, priority="high")
     return {"ok": True, "ts": ts}

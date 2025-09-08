@@ -25,7 +25,9 @@ def _loinc_for(metric: str) -> Tuple[str, str]:
 
 
 def _to_iso_z(ts: int) -> str:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    )
 
 
 def _norm_metric(m: str) -> str:
@@ -39,7 +41,9 @@ def _norm_metric(m: str) -> str:
     return m
 
 
-def _obs_from_record(ts: int, metric: str, value: Optional[float], unit: Optional[str], rid: str) -> Optional[Dict[str, Any]]:
+def _obs_from_record(
+    ts: int, metric: str, value: Optional[float], unit: Optional[str], rid: str
+) -> Optional[Dict[str, Any]]:
     if value is None:
         return None
     code, display = _loinc_for(metric)
@@ -47,20 +51,26 @@ def _obs_from_record(ts: int, metric: str, value: Optional[float], unit: Optiona
         "resourceType": "Observation",
         "id": f"{metric}-{ts}-{rid}",
         "status": "final",
-        "category": [{
-            "coding": [{
-                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                "code": "vital-signs",
-                "display": "Vital Signs",
-            }],
-            "text": "Vital Signs",
-        }],
+        "category": [
+            {
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                        "code": "vital-signs",
+                        "display": "Vital Signs",
+                    }
+                ],
+                "text": "Vital Signs",
+            }
+        ],
         "code": {
-            "coding": [{
-                "system": "http://loinc.org",
-                "code": code,
-                "display": display,
-            }],
+            "coding": [
+                {
+                    "system": "http://loinc.org",
+                    "code": code,
+                    "display": display,
+                }
+            ],
             "text": metric,
         },
         "effectiveDateTime": _to_iso_z(ts),
@@ -74,8 +84,12 @@ def _obs_from_record(ts: int, metric: str, value: Optional[float], unit: Optiona
 @router.get("/fhir", summary="Export vitals to FHIR Bundle (JSON)")
 def export_fhir(
     since: int = Query(default=0, description="Unix seconds lower bound (inclusive)."),
-    limit: int = Query(default=200, ge=1, le=5000, description="Max records to export."),
-    metric: Optional[str] = Query(default=None, description="Comma-separated metric filter, e.g. 'hr,spo2'"),
+    limit: int = Query(
+        default=200, ge=1, le=5000, description="Max records to export."
+    ),
+    metric: Optional[str] = Query(
+        default=None, description="Comma-separated metric filter, e.g. 'hr,spo2'"
+    ),
 ) -> Dict[str, Any]:
     """
     English comments only:
