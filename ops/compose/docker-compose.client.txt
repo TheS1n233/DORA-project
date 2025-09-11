@@ -13,9 +13,9 @@ services:
       - tv-svc
       - tele-assist-svc
     networks:
-      - dora-net
+      - dora_net
 
 networks:
-  dora-net:
+  dora_net:
     external: true
-    name: compose_dora-net
+    name: dora_net

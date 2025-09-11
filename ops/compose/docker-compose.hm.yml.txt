@@ -1,0 +1,39 @@
+services:
+  health-svc:
+    build:
+      context: ../../server/health-svc
+      dockerfile: Dockerfile
+    image: dora/health-svc:${DORA_TAG:-local}
+    working_dir: /app
+    volumes:
+      - ../../server/health-svc:/app
+      - ../../scripts:/scripts:ro
+    command: >
+      sh -lc "RUN_CMD='uvicorn app.main:app --host 0.0.0.0 --port 8100'; if [ \"${RELOAD:-false}\" = \"true\" ]; then RUN_CMD=\"${RUN_CMD} --reload\"; fi; echo \"[hm] start: ${RUN_CMD}\"; exec ${RUN_CMD}"
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      MQTT_HOST: ${MQTT_HOST:-mosquitto}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      HM_AES_KEY: ${HM_AES_KEY:-}
+      START_SUBSCRIBER: ${START_SUBSCRIBER:-true}
+      START_SCHEDULER: ${START_SCHEDULER:-true}
+      RELOAD: ${RELOAD:-false}
+    depends_on:
+      - redis
+    networks:
+      - dora-net
+    ports:
+      - "8100:8100"
+    healthcheck:
+      # English comments only
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8100/health/live',timeout=2); sys.exit(0)\" || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net

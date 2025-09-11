@@ -22,10 +22,3 @@ services:
     # If you want live reload during dev, mount the folder (optional):
     # volumes:
     #   - ../../server/tele-assist-svc/app:/app/app
-    networks:
-      - dora-net
-
-networks:
-  dora-net:
-    external: true
-    name: compose_dora-net

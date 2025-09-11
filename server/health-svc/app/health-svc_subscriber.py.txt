@@ -13,61 +13,92 @@ from redis import Redis
 from .core.config import HMConfig
 from .notify.telegram import notify
 from .metrics import inc, mark
-from .core.redis import get_redis  # <<< expose at module level for tests to monkeypatch
 
 
+# English comments only
 def process_vitals(data: dict) -> dict:
     """
     Ingest a single vitals record:
     - Build plaintext payload {metric,value,unit,ts,source}
     - If HM_AES_KEY is set (base64 or hex, 32 bytes), encrypt with AES-GCM
-      and store envelope {"enc":"aesgcm","iv","ct"}; otherwise store {"enc":"none","json"}
-    - XADD to stream (ENV VITALS_STREAM or "vitals"), fields include explicit "ts" and "blob"
-    - Return {"ok": True, "ts": ts, "critical": bool}
+      and store envelope {"enc":"aesgcm","iv":b64,"ct":b64}; otherwise store {"enc":"none","json":raw_json}
+    - XADD to stream (ENV VITALS_STREAM or "vitals"), field "blob" = json.dumps(envelope)
+    - Return {"ok": True, "ts": ts, "critical": bool} where critical is decided by thresholds
     """
-    import base64, secrets
+    import base64, json, os, secrets
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    from .core.redis import get_redis
 
+    # Normalize payload
     now = int(time.time())
     metric = str(data.get("metric", "")).lower()
     value = float(data.get("value", 0))
     unit = str(data.get("unit", ""))
     ts = int(data.get("ts") or now)
     source = str(data.get("source") or "api")
-    payload = {"metric": metric, "value": value, "unit": unit, "ts": ts, "source": source}
+    payload = {
+        "metric": metric,
+        "value": value,
+        "unit": unit,
+        "ts": ts,
+        "source": source,
+    }
 
+    # Decide critical by simple thresholds (ENV overrides)
     hr_high = float(os.getenv("HR_HIGH", "120"))
     spo2_low = float(os.getenv("SPO2_LOW", "90"))
     temp_high = float(os.getenv("TEMP_HIGH", "38.5"))
-    critical = (metric == "hr" and value >= hr_high) or (metric == "spo2" and value <= spo2_low) or (metric in ("temp", "temperature") and value >= temp_high)
+    critical = False
+    if metric == "hr" and value >= hr_high:
+        critical = True
+    elif metric == "spo2" and value <= spo2_low:
+        critical = True
+    elif metric in ("temp", "temperature") and value >= temp_high:
+        critical = True
 
+    # Build envelope (encrypt if key provided)
     key_raw = os.getenv("HM_AES_KEY", "").strip()
     if key_raw:
+        # parse base64 -> hex
         try:
             key = base64.b64decode(key_raw)
         except Exception:
             key = bytes.fromhex(key_raw)
         if len(key) != 32:
-            envelope = {"enc": "none", "json": json.dumps(payload, separators=(",", ":"))}
+            # Fallback to plaintext if key invalid
+            envelope = {
+                "enc": "none",
+                "json": json.dumps(payload, separators=(",", ":")),
+            }
         else:
             iv = secrets.token_bytes(12)
             aead = AESGCM(key)
-            ct = aead.encrypt(iv, json.dumps(payload, separators=(",", ":")).encode("utf-8"), None)
-            envelope = {"enc": "aesgcm", "iv": base64.b64encode(iv).decode(), "ct": base64.b64encode(ct).decode()}
+            ct = aead.encrypt(
+                iv, json.dumps(payload, separators=(",", ":")).encode("utf-8"), None
+            )
+            envelope = {
+                "enc": "aesgcm",
+                "iv": base64.b64encode(iv).decode(),
+                "ct": base64.b64encode(ct).decode(),
+            }
     else:
         envelope = {"enc": "none", "json": json.dumps(payload, separators=(",", ":"))}
 
+    # Write to Redis Stream
     r = get_redis()
     stream = os.getenv("VITALS_STREAM", "vitals")
-    # write explicit ts plus blob (compatible with export logic)
-    r.xadd(stream, {"ts": ts, "blob": json.dumps(envelope, separators=(",", ":"))})
+    r.xadd(stream, {"blob": json.dumps(envelope, separators=(",", ":"))})
 
+    # Optional notify on critical
     try:
         if critical:
-            notify(f"[HM] critical {metric}={value}{unit} from {source}", priority="high")
+            notify(
+                f"[HM] critical {metric}={value}{unit} from {source}", priority="high"
+            )
     except Exception as e:
         print(f"[hm] notify failed: {e}")
 
+    # Update metrics (best-effort)
     try:
         inc("alerts_sent", 1 if critical else 0)
         mark("last_msg_ts", ts)
@@ -109,63 +140,19 @@ def _connect_client() -> mqtt.Client:
     return c
 
 
-def _store_vitals_to_stream(p: dict) -> None:
-    """Mirror process_vitals() store logic for MQTT path to ensure Redis has entries."""
-    try:
-        import base64, secrets
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-    except Exception as e:
-        print(f"[hm] store-to-stream imports failed: {e}")
-        return
-
-    now = int(time.time())
-    metric = str(p.get("metric", "")).lower()
-    value = float(p.get("value", 0)) if p.get("value") is not None else 0.0
-    unit = str(p.get("unit", ""))
-    ts = int(p.get("ts") or now)
-    source = str(p.get("source") or "mqtt")
-    payload = {"metric": metric, "value": value, "unit": unit, "ts": ts, "source": source}
-
-    key_raw = os.getenv("HM_AES_KEY", "").strip()
-    if key_raw:
-        try:
-            key = base64.b64decode(key_raw)
-        except Exception:
-            key = bytes.fromhex(key_raw)
-        if len(key) == 32:
-            iv = secrets.token_bytes(12)
-            aead = AESGCM(key)
-            ct = aead.encrypt(iv, json.dumps(payload, separators=(",", ":")).encode("utf-8"), None)
-            envelope = {"enc": "aesgcm", "iv": base64.b64encode(iv).decode(), "ct": base64.b64encode(ct).decode()}
-        else:
-            envelope = {"enc": "none", "json": json.dumps(payload, separators=(",", ":"))}
-    else:
-        envelope = {"enc": "none", "json": json.dumps(payload, separators=(",", ":"))}
-
-    try:
-        r = get_redis()
-        stream = os.getenv("VITALS_STREAM", "vitals")
-        r.xadd(stream, {"ts": ts, "blob": json.dumps(envelope, separators=(",", ":"))})
-    except Exception as e:
-        print(f"[hm] redis xadd failed: {e}")
-
-
-def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMessage) -> None:
+def _on_message(
+    cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMessage
+) -> None:
     global _last_msg_ts
     try:
         p = json.loads(msg.payload.decode("utf-8"))
     except Exception:
         return
-
-    try:
-        _store_vitals_to_stream(p)
-    except Exception as e:
-        print(f"[hm] store-to-stream error: {e}")
-
     ts = int(p.get("ts", int(time.time())))
     metric = str(p.get("metric", "")).lower()
     _last_msg_ts = ts
 
+    # HR high
     if metric == "hr":
         try:
             val = float(p.get("value"))
@@ -175,10 +162,14 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
         if val >= cfg.HR_HIGH:
             ttl = cfg.HR_ALERT_COOLDOWN_MIN * 60
             if _redis_set_cooldown(r, _cooldown_key("hr_high"), ttl):
-                suffix = f" source={p.get('source')}" if p.get("source") else ""
+                suffix = ""
+                if p.get("source"):
+                    suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: hr={val:.1f} bpm{suffix}", priority="high")
+                    ok = notify(
+                        f"Health alert: hr={val:.1f} bpm{suffix}", priority="high"
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -186,7 +177,8 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
                     mark("last_emergency_ts", ts)
         return
 
-    if metric in ("spo2",):
+    # SpO2 low (<= threshold)
+    if metric in ("spo2", "spO2".lower()):
         try:
             val = float(p.get("value"))
         except Exception:
@@ -195,10 +187,14 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
             ttl = cfg.SPO2_ALERT_COOLDOWN_MIN * 60
             if _redis_set_cooldown(r, _cooldown_key("spo2_low"), ttl):
                 unit = str(p.get("unit", "%")) or "%"
-                suffix = f" source={p.get('source')}" if p.get("source") else ""
+                suffix = ""
+                if p.get("source"):
+                    suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: spo2={val:.0f} {unit}{suffix}", priority="high")
+                    ok = notify(
+                        f"Health alert: spo2={val:.0f} {unit}{suffix}", priority="high"
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -207,6 +203,7 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
                     mark("last_emergency_ts", ts)
         return
 
+    # Temperature high (>= threshold)
     if metric in ("temp", "temperature"):
         try:
             val = float(p.get("value"))
@@ -216,10 +213,15 @@ def _on_message(cfg: HMConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
             ttl = cfg.TEMP_ALERT_COOLDOWN_MIN * 60
             if _redis_set_cooldown(r, _cooldown_key("temp_high"), ttl):
                 unit = str(p.get("unit", "C")) or "C"
-                suffix = f" source={p.get('source')}" if p.get("source") else ""
+                suffix = ""
+                if p.get("source"):
+                    suffix = f" source={p.get('source')}"
                 ok = False
                 try:
-                    ok = notify(f"Health alert: temp={val:.1f} °{unit}{suffix}", priority="normal")
+                    ok = notify(
+                        f"Health alert: temp={val:.1f} °{unit}{suffix}",
+                        priority="normal",
+                    )
                 except Exception as e:
                     print(f"[hm] notify failed: {e}")
                 if ok:
@@ -249,7 +251,9 @@ def start(cfg: HMConfig, r: Redis) -> None:
     if _running:
         return
     _running = True
-    _thread = threading.Thread(target=_worker, args=(cfg, r), name="hm-subscriber", daemon=True)
+    _thread = threading.Thread(
+        target=_worker, args=(cfg, r), name="hm-subscriber", daemon=True
+    )
     _thread.start()
     print("[subscriber] started")
 
@@ -260,22 +264,32 @@ def stop() -> None:
 
 
 def status() -> dict:
-    return {"running": _running, "last_connect_rc": _last_connect_rc, "last_msg_ts": _last_msg_ts}
+    return {
+        "running": _running,
+        "last_connect_rc": _last_connect_rc,
+        "last_msg_ts": _last_msg_ts,
+    }
 
 
 def check_no_measure_and_remind(cfg: HMConfig, r: Redis) -> Optional[str]:
     now = int(time.time())
-    last = r.get("hm:last_measure_ts")
-    last = int(last) if last else None
-    need = (last is None) or (now - last >= cfg.NO_MEASURE_WINDOW_MIN * 60)
+    last = _get_last_measure(r)
+    need = False
+    if last is None:
+        need = True
+    elif now - last >= cfg.NO_MEASURE_WINDOW_MIN * 60:
+        need = True
     if not need:
         return None
 
     cd = cfg.REMINDER_COOLDOWN_MIN * 60
-    if r.set(name="hm:cd:no_measure", value="1", ex=cd, nx=True):
+    if _redis_set_cooldown(r, _cooldown_key("no_measure"), cd):
         ok = False
         try:
-            ok = notify(f"Reminder: no hr measurement in last {cfg.NO_MEASURE_WINDOW_MIN} minutes", priority="normal")
+            ok = notify(
+                f"Reminder: no hr measurement in last {cfg.NO_MEASURE_WINDOW_MIN} minutes",
+                priority="normal",
+            )
         except Exception as e:
             print(f"[hm] notify failed: {e}")
         if ok:

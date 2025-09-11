@@ -16,27 +16,23 @@ services:
       exec $${RUN_CMD}
       "
     environment:
-      # DO NOT inherit from host env; fix them to service DNS names in the compose network
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
+      # English comments only: force in-cluster broker; never inherit host's 127.0.0.1
       MQTT_HOST: mosquitto
-      MQTT_PORT: "1883"
-      START_SUBSCRIBER: "true"
-      RELOAD: "false"
+      REDIS_HOST: redis
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      AWAY_MODE: ${AWAY_MODE:-true}
+      START_SUBSCRIBER: ${START_SUBSCRIBER:-true}
+      RELOAD: ${RELOAD:-false}
     depends_on:
       - redis
-    networks:
-      - dora-net
+    networks: [dora-net]
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport urllib.request,sys\ntry:\n  urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=2)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      # English comments only: use python to probe live endpoint
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=2); sys.exit(0)\" || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 30
       start_period: 60s
-
-networks:
-  dora-net:
-    external: true
-    name: compose_dora-net

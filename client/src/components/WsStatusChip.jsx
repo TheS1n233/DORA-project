@@ -2,18 +2,26 @@
 import React from 'react';
 import { useWs } from './WsProvider.jsx';
 
+function mapStatus(s) {
+  // Normalize provider ('open'|'closed'|'connecting'|'idle') to UI ('connected'|'connecting'|'disconnected')
+  if (s === 'open') return 'connected';
+  if (s === 'connecting') return 'connecting';
+  return 'disconnected'; // 'closed' or 'idle' or unknown
+}
+
 export default function WsStatusChip({ align = 'right' }) {
-  const { status, room } = useWs() || { status: 'disconnected', room: 'demo' };
+  const { status, room } = useWs() || { status: 'idle', room: 'demo' };
+  const norm = mapStatus(status);
   const bg =
-    status === 'connected'
+    norm === 'connected'
       ? 'var(--chip-bg-ok, #dcfce7)'
-      : status === 'connecting'
+      : norm === 'connecting'
       ? 'var(--chip-bg-warn, #fef9c3)'
       : 'var(--chip-bg-bad, #fee2e2)';
   const color =
-    status === 'connected'
+    norm === 'connected'
       ? 'var(--chip-fg-ok, #166534)'
-      : status === 'connecting'
+      : norm === 'connecting'
       ? 'var(--chip-fg-warn, #92400e)'
       : 'var(--chip-fg-bad, #991b1b)';
 
@@ -27,16 +35,15 @@ export default function WsStatusChip({ align = 'right' }) {
     padding: '6px 10px',
     borderRadius: 999,
     fontSize: 12,
-    border: '1px solid rgba(0,0,0,0.05)',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
   };
 
   return (
     <div style={style}>
       <span style={{ marginRight: 8 }}>
-        {status === 'connected'
+        {norm === 'connected'
           ? 'WS connected'
-          : status === 'connecting'
+          : norm === 'connecting'
           ? 'WS connecting'
           : 'WS disconnected'}
       </span>

@@ -9,107 +9,87 @@ from fastapi import FastAPI
 from .core.redis import get_redis
 from .metrics import snapshot as metrics_snapshot
 from .api.fall import router as fall_router
-from .core.config import load_config, print_config
 from .api.emergency import router as emergency_router
 
-# Optional: subscriber may or may not exist in this service
+# Optional subscriber (may not exist in some builds)
 try:
-    from . import subscriber as sub  # type: ignore
-except Exception:  # pragma: no cover
-    sub = None  # type: ignore
-
-_sub_running: bool = False
+    from . import subscriber as _subscriber  # type: ignore[attr-defined]
+except Exception:
+    _subscriber = None  # type: ignore
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # English comments only
-    global _sub_running
+    # Health checks and optional background subscriber
     r = get_redis()
-    cfg = load_config()
-    print_config(cfg)
 
-    # Best-effort MQTT DNS check
+    # Probe Redis (best-effort)
+    try:
+        r.ping()
+        app.state._hs_redis_ok = True
+    except Exception:
+        app.state._hs_redis_ok = False
+
+    # Probe MQTT DNS (best-effort)
     try:
         socket.gethostbyname(os.getenv("MQTT_HOST", "mosquitto"))
-        print("[hs] mqtt dns ok")
-    except Exception as e:
-        print(f"[hs] mqtt dns failed: {e}")
+        app.state._hs_mqtt_dns_ok = True
+    except Exception:
+        app.state._hs_mqtt_dns_ok = False
 
-    # Start subscriber with cfg and redis if present and enabled
-    if sub is not None and cfg.START_SUBSCRIBER:
+    # Start subscriber if available and enabled
+    start_sub = os.getenv("START_SUBSCRIBER", "true").lower() in ("1", "true", "yes", "on")
+    if _subscriber and start_sub:
         try:
-            sub.start(cfg, r)
-            _sub_running = True
+            cfg = None
+            # Lazy import to avoid circulars
+            from .core.config import load_config  # type: ignore
+            cfg = load_config()
+            _subscriber.start(cfg, r)  # type: ignore
+            app.state._hs_sub_running = True
         except Exception as e:
             print(f"[hs] subscriber start failed: {e}")
+            app.state._hs_sub_running = False
+    else:
+        app.state._hs_sub_running = False
 
     yield
 
-    # Shutdown
-    if sub is not None:
+    # Stop subscriber on shutdown
+    if _subscriber and getattr(app.state, "_hs_sub_running", False):
         try:
-            sub.stop()
+            _subscriber.stop()  # type: ignore
         except Exception:
             pass
-    _sub_running = False
 
 
-app = FastAPI(lifespan=lifespan)
+def create_app() -> FastAPI:
+    app = FastAPI(title="home-safety-svc", lifespan=lifespan)
 
-# Mount API routers
-app.include_router(fall_router)
-app.include_router(emergency_router)
+    # Routers
+    app.include_router(fall_router)
+    app.include_router(emergency_router)
 
+    @app.get("/health/live")
+    def live():
+        return {"status": "live"}
 
-@app.get("/whoami")
-def whoami():
-    import app as _pkg
+    @app.get("/health/ready")
+    def ready():
+        return {
+            "redis": bool(getattr(app.state, "_hs_redis_ok", False)),
+            "mqtt_dns": bool(getattr(app.state, "_hs_mqtt_dns_ok", False)),
+            "subscriber": bool(getattr(app.state, "_hs_sub_running", False)),
+            "metrics": metrics_snapshot(),
+        }
 
-    return {"service": "hs", "import_path": getattr(_pkg, "__file__", "")}
-
-
-@app.get("/ping")
-def ping():
-    # English comments only
-    return {"msg": "pong"}
-
-
-@app.get("/health/live")
-def health_live():
-    # English comments only
-    return {"status": "live"}
+    return app
 
 
-@app.get("/health/ready")
-def health_ready():
-    # English comments only
-    ok_redis = False
-    ok_dns = False
-    try:
-        get_redis().ping()
-        ok_redis = True
-    except Exception:
-        ok_redis = False
-    try:
-        host = os.getenv(
-            "MQTT_HOST", "mosquitto"
-        )  # prefer env var, fallback to default
-        socket.gethostbyname(host)
-        ok_dns = True
-    except Exception:
-        ok_dns = False
+# For uvicorn entry if ever needed: `python -m app.main`
+def run():
+    import uvicorn
+    uvicorn.run(create_app(), host=os.getenv("HS_HOST", "0.0.0.0"), port=int(os.getenv("HS_PORT", "8000")))
 
-    # Telegram env (optional in HS)
-
-    has_token = bool(os.getenv("TELEGRAM_TOKEN"))
-    has_chat = bool(os.getenv("TELEGRAM_CHAT_ID"))
-
-    metrics = metrics_snapshot()
-    return {
-        "redis": ok_redis,
-        "mqtt_dns": ok_dns,
-        "subscriber": bool(_sub_running),
-        "notify_env": {"has_token": has_token, "has_chat": has_chat},
-        "metrics": metrics,
-    }
+# >>> Add this line to satisfy "uvicorn app.main:app"
+app = create_app()

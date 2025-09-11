@@ -16,22 +16,30 @@ services:
       exec $${RUN_CMD}
       "
     environment:
-      MQTT_HOST: mosquitto
+      # Fix to internal service DNS names within compose network
       REDIS_HOST: redis
-      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
-      START_SUBSCRIBER: ${START_SUBSCRIBER:-true}
-      START_SCHEDULER: ${START_SCHEDULER:-true}
-      RELOAD: ${RELOAD:-false}
+      REDIS_PORT: "6379"
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      HM_AES_KEY: ""
+      START_SUBSCRIBER: "true"
+      START_SCHEDULER: "false"   # <<< disable scheduler for now
+      RELOAD: "false"
     depends_on:
       - redis
-    networks: [dora-net]
+    networks:
+      - dora-net
     ports:
       - "8100:8100"
     healthcheck:
       # English comments only
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8100/health/live',timeout=2); sys.exit(0)\" || exit 1"]
+      test: ["CMD-SHELL", "python - <<'PY'\nimport urllib.request,sys\ntry:\n  urllib.request.urlopen('http://127.0.0.1:8100/health/live',timeout=2)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
       interval: 10s
       timeout: 3s
       retries: 30
       start_period: 30s
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net

@@ -9,10 +9,16 @@ export default function FhirExportButton() {
   async function onClick() {
     setLoading(true);
     setDone(false);
-    const r = await exportFhir();
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => setDone(false), 2000);
+    try {
+      await exportFhir();
+      setDone(true);
+      setTimeout(() => setDone(false), 2000);
+    } catch (e) {
+      // Show a minimal, accessible error hint
+      alert('Export failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

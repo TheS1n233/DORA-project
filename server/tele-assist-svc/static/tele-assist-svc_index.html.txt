@@ -8,7 +8,7 @@
     <link href="/static/style.css" rel="stylesheet"/>
     <style>
       /* English comments only */
-      .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+      .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
       .bar input{padding:8px 10px;background:#0e141b;color:#e6edf3;border:1px solid #1d2733;border-radius:8px;min-width:220px}
       .bar button{padding:8px 12px;background:#182433;color:#e6edf3;border:1px solid #243347;border-radius:10px;cursor:pointer}
       .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
@@ -20,8 +20,11 @@
       .badge.err{background:rgba(255,107,107,.15);color:#ff6b6b}
       /* embed pane */
       #callEmbed{display:none;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #1c2633}
-      #callEmbed iframe{width:100%;height:100vh;border:0}
+      #callEmbed iframe{width:100%;height:60vh;border:0}
       label.small{display:flex;align-items:center;gap:6px;font-size:13px;opacity:.85}
+      /* keep checkbox and related buttons in one row */
+      .care-ops{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap}
+      .statusline{margin-top:2px;margin-bottom:10px;opacity:.9}
     </style>
   </head>
   <body>
@@ -40,10 +43,17 @@
         <button id="pause">Pause</button>
         <button id="sync">Sync</button>
 
-        <!-- caregiver join controls -->
-        <label class="small"><input id="embedChk" type="checkbox"/> Embed</label>
-        <button id="joinCallBtn">Join Call as Caregiver</button>
+        <!-- caregiver ops: checkbox stays close to buttons -->
+        <div class="care-ops">
+          <label class="small"><input id="embedChk" type="checkbox"/> Embed</label>
+          <button id="startCallBtn">Start Call</button>
+          <button id="joinCallBtn">Join Call as Caregiver</button>
+          <button id="hangCallBtn">Hang up</button>
+        </div>
       </section>
+
+      <!-- call status line -->
+      <div id="callStatus" class="statusline"></div>
 
       <section class="cards" id="cards"></section>
 
@@ -69,16 +79,19 @@
       const btnSync  = $("#sync");
 
       // caregiver controls
-      const btnJoinCall = $("#joinCallBtn");
-      const embedChk    = $("#embedChk");
-      const callEmbed   = $("#callEmbed");
+      const btnStartCall = $("#startCallBtn");
+      const btnJoinCall  = $("#joinCallBtn");
+      const btnHangCall  = $("#hangCallBtn");
+      const embedChk     = $("#embedChk");
+      const callEmbed    = $("#callEmbed");
+      const callStatus   = $("#callStatus");
 
       const LS = { room:"ta_room", url:"ta_url", tv:"ta_tv", last:"ta_last_call" };
 
       let wsRoom = null;
       let lastCallUrl = localStorage.getItem(LS.last) || null;
 
-      function addCard(title, body, badge, state) {
+      function addCard(title, body, badge) {
         const el = document.createElement("div");
         el.className = "card";
         const b = badge || "";
@@ -91,6 +104,7 @@
       function setState(ok){ wsState.textContent = ok ? "WS: connected" : "WS: disconnected"; }
       function remember(k,v){ try{ localStorage.setItem(k,v) }catch{} }
       function recall(k,d=""){ try{ return localStorage.getItem(k) ?? d }catch{ return d } }
+      function setCallStatus(text){ try{ callStatus.textContent = text || ""; } catch{} }
 
       function tvRoomUrl() {
         const host = location.hostname || "127.0.0.1";
@@ -106,6 +120,7 @@
         const url = urlMaybe || defaultMeetUrl();
         lastCallUrl = url;
         remember(LS.last, url);
+        setCallStatus(`当前呼叫 URL：${url}`);
       }
 
       function join() {
@@ -114,7 +129,7 @@
         wsRoom = new WebSocket(url);
         wsRoom.onopen  = ()=>{ addCard("JOIN",{url},"OK"); setState(true); };
         wsRoom.onclose = ()=>{ addCard("JOIN","closed","WARN"); setState(false); };
-        wsRoom.onerror = (e)=>{ addCard("JOIN","error","ERR"); };
+        wsRoom.onerror = ()=>{ addCard("JOIN","error","ERR"); };
         wsRoom.onmessage = (ev)=>{
           try{
             const msg = JSON.parse(ev.data);
@@ -124,6 +139,13 @@
               if (p && (p.action==="call" || p.action==="answer")) {
                 if (typeof p.url === "string" && p.url.length>0) updateLastCallUrl(p.url);
                 else updateLastCallUrl(null);
+                if (p.action === "answer") setCallStatus(`已应答，呼叫 URL：${lastCallUrl}`);
+                if (p.action === "call")   setCallStatus(`已发起呼叫（等待应答），呼叫 URL：${lastCallUrl}`);
+              }
+              if (p && p.action === "hang") {
+                setCallStatus("已挂断");
+                if (callEmbed) callEmbed.innerHTML = "";
+                callEmbed.style.display = "none";
               }
             }
           }catch{}
@@ -143,16 +165,53 @@
       btnPause.onclick = ()=> send({action:"pause", play:false});
       btnSync.onclick  = ()=> send({action:"state?"});
 
-      // caregiver join handler
-      btnJoinCall.onclick = ()=>{
+      // REST helpers to call TA endpoints (same-origin)
+      async function apiStartCall() {
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        const url  = lastCallUrl || defaultMeetUrl();
+        setCallStatus("正在发起呼叫…");
+        try{
+          const res = await fetch("/api/call/start", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({room, url})
+          });
+          const j = await res.json().catch(()=>({}));
+          addCard("API /call/start", j, res.ok ? "OK" : "ERR");
+          if (res.ok) updateLastCallUrl(url);
+        }catch(e){ addCard("API /call/start", String(e), "ERR"); }
+      }
+      async function apiHangCall() {
+        const room = (inputRoom.value || "demo").trim() || "demo";
+        setCallStatus("正在挂断…");
+        try{
+          const res = await fetch("/api/call/hang", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({room})
+          });
+          const j = await res.json().catch(()=>({}));
+          addCard("API /call/hang", j, res.ok ? "OK" : "ERR");
+          setCallStatus("已挂断");
+          if (callEmbed) callEmbed.innerHTML = "";
+          callEmbed.style.display = "none";
+        }catch(e){ addCard("API /call/hang", String(e), "ERR"); }
+      }
+
+      // buttons
+      btnStartCall.onclick = ()=> apiStartCall();
+      btnHangCall.onclick  = ()=> apiHangCall();
+      btnJoinCall.onclick  = ()=>{
         const url = lastCallUrl || defaultMeetUrl();
         if (embedChk && embedChk.checked) {
           callEmbed.style.display = "block";
           callEmbed.innerHTML = `<iframe src="${url}" allow="camera; microphone; display-capture; autoplay"></iframe>`;
           addCard("CALL","embed join","OK");
+          setCallStatus(`已嵌入会议：${url}`);
         } else {
           window.open(url, "_blank", "noopener");
           addCard("CALL",{open:url},"OK");
+          setCallStatus(`已在新标签页打开：${url}`);
         }
       };
 
@@ -160,6 +219,7 @@
         inputRoom.value = recall(LS.room, (new URLSearchParams(location.search).get("room")||""));
         inputUrl.value  = recall(LS.url, "");
         if (inputRoom.value) join();
+        if (lastCallUrl) setCallStatus(`当前呼叫 URL：${lastCallUrl}`);
       })();
     </script>
   </body>

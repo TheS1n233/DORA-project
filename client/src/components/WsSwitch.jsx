@@ -1,46 +1,56 @@
 // /src/components/WsSwitch.jsx
-import { useState } from 'react';
-import { connectWs, disconnectWs, send, __ws } from '/src/lib/ws_client.js';
+// English comments only
+import React, { useMemo } from "react";
+import { useWs } from "./WsProvider.jsx";
 
-export default function WsSwitch({ defaultRoom = 'demo' }) {
-  const [status, setStatus] = useState(__ws.state.status || 'idle');
+function mapStatus(s) {
+  if (s === "open") return "connected";
+  if (s === "connecting") return "connecting";
+  return "disconnected"; // 'closed' | 'idle' | unknown
+}
+
+export default function WsSwitch({ defaultRoom = "demo" }) {
+  const api = useWs();
+  const uiStatus = useMemo(() => mapStatus(api?.status), [api?.status]);
+  const room = api?.room || defaultRoom;
 
   const doConnect = async () => {
-    setStatus('connecting');
     try {
-      await connectWs({
-        room: defaultRoom,
-        onMessage: (msg) => console.debug('[WS] msg:', msg),
-      });
-      setStatus('connected');
+      if (api?.setRoom && room !== (api?.room || defaultRoom)) {
+        api.setRoom(room);
+      }
+      await api?.connect?.();
     } catch (e) {
-      console.error('WS connect failed:', e);
-      setStatus('disconnected');
+      // no-op: status chip / overlay will reflect final state
+      console.warn("[WS] connect failed:", e);
     }
   };
 
-  const doDisconnect = () => {
-    disconnectWs();
-    setStatus('disconnected');
+  const doDisconnect = async () => {
+    try {
+      await api?.disconnect?.();
+    } catch (e) {
+      console.warn("[WS] disconnect failed:", e);
+    }
   };
 
   const doPing = () => {
     try {
-      send({ type: 'ping', from: 'button', at: Date.now() });
+      api?.send?.({ type: "ping", from: "WsSwitch", at: Date.now() });
     } catch (e) {
-      console.warn(e.message);
+      console.warn("[WS] ping failed:", e);
     }
   };
 
   return (
     <div className="inline-flex items-center gap-2">
-      <button onClick={status === 'connected' ? doDisconnect : doConnect}>
-        WS {status === 'connected' ? 'disconnect' : 'connect'}
+      <button className="btn" onClick={uiStatus === "connected" ? doDisconnect : doConnect}>
+        WS {uiStatus === "connected" ? "disconnect" : "connect"}
       </button>
-      <button onClick={doPing} disabled={status !== 'connected'}>
+      <button className="btn btn-secondary" onClick={doPing} disabled={uiStatus !== "connected"}>
         Ping
       </button>
-      <small>state: {status} · room: {defaultRoom}</small>
+      <small>state: {uiStatus} · room: {room}</small>
     </div>
   );
 }

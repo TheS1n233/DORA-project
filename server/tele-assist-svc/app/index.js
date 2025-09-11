@@ -1,28 +1,33 @@
 // server/tele-assist-svc/app/index.js
-// Node/Express entrypoint for Tele-assist service
+// English comments only
 
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import livekitTokenRouter from "./routes/livekit-token.js"; // route for issuing LiveKit access tokens
+import livekitTokenRouter from "./routes/livekit-token.js";
 
 const app = express();
 
-// middlewares
-app.use(cors()); // allow cross-origin for dev
+// Middlewares
+app.use(cors());
 app.use(express.json());
-app.use(morgan("dev")); // request logger
+app.use(morgan("dev"));
 
-// health check
+// Basic health endpoints
+app.get("/ping", (_req, res) => {
+  res.json({ msg: "pong" });
+});
 app.get("/healthz", (_req, res) => {
-  res.status(200).send("ok");
+  res.json({ status: "live" });
+});
+app.get("/whoami", (_req, res) => {
+  res.json({ service: "tele-assist-svc", pid: process.pid });
 });
 
-// LiveKit token route
-// GET /tele/livekit/token?room=demo&identity=care-1&role=caregiver
+// LiveKit token route: GET /tele/livekit/token?room=demo&identity=care-1&role=caregiver
 app.use("/tele", livekitTokenRouter);
 
-// default 404
+// Default 404 in JSON
 app.use((_req, res) => {
   res.status(404).json({ error: "not_found" });
 });
