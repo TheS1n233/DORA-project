@@ -8,6 +8,7 @@ import FhirExportButton from '../components/FhirExportButton.jsx';
 import { fetchDevices } from '../lib/services/devices.js';
 import LiveKitPanel from '../components/LiveKitPanel.jsx';
 import WsSwitch from '../components/WsSwitch.jsx';
+import EventsTimeline from '../components/EventsTimeline.jsx';
 
 export default function CaregiverPage() {
   const userName = useMemo(() => {
@@ -15,7 +16,7 @@ export default function CaregiverPage() {
     return (u && (u.name || u.nickname || u.id)) || 'Caregiver';
   }, []);
 
-  const { status, room } = useWs() || {
+  const { status, room, send } = useWs() || {
     status: 'disconnected',
     room: 'demo',
     send: () => {},
@@ -31,19 +32,18 @@ export default function CaregiverPage() {
   // LiveKit panel state
   const [lkOpen, setLkOpen] = useState(false);
 
+  // devices mock/load
   const [devices, setDevices] = useState([]);
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const list = await fetchDevices();
-      if (alive) setDevices(list);
-    })();
-    return () => { alive = false; };
+    fetchDevices().then(setDevices).catch(() => setDevices([]));
   }, []);
 
   return (
-    <div className="app-shell">
-      <aside className="app-aside">
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="logo">
+          <img src="/logo.svg" alt="" className="w-10 h-10" />
+        </div>
         <h1 className="text-2xl font-bold text-green-600 mb-6">DORA</h1>
         <nav className="space-y-4">
           <div>Dashboard</div>
@@ -58,34 +58,17 @@ export default function CaregiverPage() {
       <main className="app-main">
         <div className="topbar">
           <input type="text" placeholder="Search" className="input max-w-md" />
-          <div className="flex items-center space-x-3">
-            {/* WS local on/off switch */}
-            <WsSwitch />
-            <span className={`badge ${wsBadge}`}>
-              {status === 'connected' ? 'WS connected' : status === 'connecting' ? 'WS connecting' : 'WS disconnected'}
-            </span>
-            <span className="badge">room: {room || 'demo'}</span>
-            <div className="flex items-center space-x-2">
-              <img src="https://i.pravatar.cc/40?img=5" alt="avatar" className="w-10 h-10 rounded-full" />
-              <span className="font-semibold">{userName}</span>
-            </div>
+          <div 
+            className={`badge ${wsBadge}`}
+            aria-live="polite"
+            aria-label={`WebSocket status ${status}`}
+          >
+            {status}
           </div>
+          <WsSwitch />
         </div>
 
-        <div className="mt-4">
-          <TvCompatBanner />
-        </div>
-
-        <div className="card mt-4">
-          <div className="flex items-center gap-3 mb-2">
-            <label className="text-sm flex items-center gap-2">
-              <input type="checkbox" /> <span>Embed</span>
-            </label>
-            <button className="btn" onClick={() => setLkOpen(true)}>Start Call</button>
-            <button className="btn" onClick={() => setLkOpen(true)}>Join</button>
-            <button className="btn" onClick={() => setLkOpen(false)}>Hang up</button>
-          </div>
-        </div>
+        <TvCompatBanner />
 
         <div className="grid grid-cols-4 gap-6 mt-4">
           <div className="card">
@@ -97,12 +80,12 @@ export default function CaregiverPage() {
             <div className="text-5xl font-bold">0</div>
           </div>
           <div className="card">
-            <h2 className="font-bold mb-2">Env. alerts today</h2>
-            <div className="text-5xl font-bold">0</div>
+            <h2 className="font-bold mb-2">Hazards</h2>
+            <div className="text-5xl font-bold">2</div>
           </div>
           <div className="card">
             <h2 className="font-bold mb-2">Devices online</h2>
-            <div className="text-5xl font-bold">6</div>
+            <div className="text-5xl font-bold">{devices.length}</div>
           </div>
         </div>
 
@@ -122,27 +105,41 @@ export default function CaregiverPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mt-6">
-          <div className="card">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-bold">Health board</h2>
-              <FhirExportButton />
+        <div className="card mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold">Tele-assist</h2>
+            <div className="flex items-center gap-3">
+              <label className="text-sm flex items-center gap-2">
+                <input type="checkbox" /> <span>Embed</span>
+              </label>
+              <button className="btn" onClick={() => setLkOpen(true)}>Start Call</button>
+              <button className="btn" onClick={() => setLkOpen(true)}>Join</button>
+              <button className="btn" onClick={() => setLkOpen(false)}>Hang up</button>
             </div>
-            <div className="p-3 rounded-md border border-slate-200 bg-white">BP last: 120/78</div>
-            <div className="p-3 rounded-md border border-slate-200 bg-white mt-2">HR last: 74</div>
-            <div className="p-3 rounded-md border border-slate-200 bg-white mt-2">Steps today: 2300</div>
-            <div className="p-3 rounded-md border border-slate-200 bg-white mt-2">Glucose last: normal</div>
           </div>
+          <div className="rounded-md border border-slate-200 p-4 bg-white">
+            <div className="text-sm opacity-70">Room: {room || 'demo'}</div>
+            <FhirExportButton />
+          </div>
+        </div>
 
-          <div className="card">
-            <h2 className="font-bold mb-2">Devices</h2>
-            {devices.map((d) => (
-              <div key={d.id} className="p-3 rounded-md border border-slate-200 bg-white flex justify-between mt-2 first:mt-0">
-                <span>{d.name}</span><span>{d.status}</span>
+        <div className="card mt-6">
+          <h2 className="font-bold mb-2">Devices</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {devices.map((d, i) => (
+              <div key={i} className="p-3 rounded-md border border-slate-200 bg-white">
+                <div className="font-semibold">{d.name || d.id || 'Device'}</div>
+                <div className="text-xs opacity-70">{d.type || 'unknown'}</div>
               </div>
             ))}
             {!devices.length && <div className="p-3 rounded-md border border-slate-200 bg-white">No devices.</div>}
           </div>
+        </div>
+
+        {/* === New: Events timeline card === */}
+        <div className="card mt-6">
+          <h2 className="font-bold mb-2">Events (24h)</h2>
+          <EventsTimeline kinds="vitals,hazard,emergency" since="24h" limit={200} />
         </div>
       </main>
 

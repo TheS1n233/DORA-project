@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 import asyncio
 import socket
+
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI
 from .api import vitals as _api_vitals
 from .api import export as _api_export
+from .api import events as _api_events
 from redis import Redis
 
 from .core.config import HMConfig, load_config, print_config
@@ -71,6 +73,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(_api_vitals.router)
 app.include_router(_api_export.router)
+app.include_router(_api_events.router, prefix="")
 
 
 @app.get("/whoami")

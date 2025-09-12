@@ -14,6 +14,24 @@ from .core.config import HSConfig
 from .notify.telegram import notify
 from .metrics import inc, mark
 
+# Try to import unified event helpers; provide safe fallbacks if missing
+try:
+    from dora_common import make_event, to_stream_fields  # libs/dora-common
+except Exception:  # pragma: no cover
+    def make_event(kind: str, *, ts: Optional[int] = None, source: Optional[str] = None,
+                   data: Optional[Dict] = None, severity: Optional[str] = None) -> Dict:
+        if ts is None:
+            ts = int(time.time())
+        ev = {"ts": int(ts), "kind": str(kind), "source": source or "", "data": data or {}}
+        if severity:
+            ev["sev"] = severity
+        return ev
+    def to_stream_fields(ev: Dict) -> Dict[str, str]:
+        ts = str(int(ev.get("ts", int(time.time()))))
+        kind = str(ev.get("kind", ""))
+        blob = json.dumps(ev, separators=(",", ":"))
+        return {"ts": ts, "kind": kind, "json": blob}
+
 # ---- internal runtime state ----
 _running = False
 _thread: Optional[threading.Thread] = None
@@ -41,7 +59,6 @@ def _cooldown_key(kind: str, source: Optional[str] = None) -> str:
 
 
 def _redis_set_cooldown(r: Redis, key: str, ttl_sec: int) -> bool:
-    # set if not exists
     return r.set(name=key, value="1", ex=ttl_sec, nx=True) is True
 
 
@@ -64,7 +81,6 @@ def _parse_bool(v) -> bool:
 
 
 def _handle_motion(topic: str, payload: dict) -> None:
-    """Update inactivity clock from 'motion/<room>' topics."""
     parts = topic.split("/")
     if len(parts) >= 2:
         room = parts[1] or "unknown"
@@ -73,6 +89,17 @@ def _handle_motion(topic: str, payload: dict) -> None:
     ts = int(payload.get("ts") or _now())
     _LAST_ACTIVE[room] = ts
     mark("last_motion_ts", ts)
+
+
+def _write_unified_event(kind: str, ts: int, data: Dict, severity: str = "warn", source: str = "home-safety-svc") -> None:
+    """Write to unified 'events' stream."""
+    try:
+        ev = make_event(kind, ts=ts, source=source, data=data, severity=severity)
+        fields = to_stream_fields(ev)
+        stream = os.getenv("EVENTS_STREAM", "events")
+        _xadd(stream, fields)
+    except Exception as e:
+        print(f"[hs] xadd unified events failed: {e}")
 
 
 def _handle_hazard(kind: str, payload: dict, r: Redis, cfg: HSConfig) -> None:
@@ -108,6 +135,8 @@ def _handle_hazard(kind: str, payload: dict, r: Redis, cfg: HSConfig) -> None:
                     mark("last_hazard_ts", ts)
                 except Exception as e:
                     print(f"[hs] notify failed: {e}")
+            # Unified events (only when hazard=true to reduce noise)
+            _write_unified_event("hazard", ts, {"type": "gas", "level": level, "source": source or "mqtt"}, severity="warn")
 
     elif kind == "smoke":
         try:
@@ -127,6 +156,7 @@ def _handle_hazard(kind: str, payload: dict, r: Redis, cfg: HSConfig) -> None:
                     mark("last_hazard_ts", ts)
                 except Exception as e:
                     print(f"[hs] notify failed: {e}")
+            _write_unified_event("hazard", ts, {"type": "smoke", "level": level, "source": source or "mqtt"}, severity="warn")
 
     elif kind == "water":
         state = payload.get("state")
@@ -149,6 +179,7 @@ def _handle_hazard(kind: str, payload: dict, r: Redis, cfg: HSConfig) -> None:
                     mark("last_hazard_ts", ts)
                 except Exception as e:
                     print(f"[hs] notify failed: {e}")
+            _write_unified_event("hazard", ts, {"type": "water", "state": "leak", "source": source or "mqtt"}, severity="warn")
 
     elif kind == "power":
         state = str(payload.get("state", "")).lower()
@@ -167,6 +198,7 @@ def _handle_hazard(kind: str, payload: dict, r: Redis, cfg: HSConfig) -> None:
                     mark("last_hazard_ts", ts)
                 except Exception as e:
                     print(f"[hs] notify failed: {e}")
+            _write_unified_event("hazard", ts, {"type": "power", "state": "outage", "source": source or "mqtt"}, severity="warn")
 
     # Always write one record for observability, even if under cooldown
     try:
@@ -185,51 +217,40 @@ def _on_message(cfg: HSConfig, r: Redis, _client: mqtt.Client, msg: mqtt.MQTTMes
 
     _last_msg_ts = int(p.get("ts") or _now())
 
-    # Motion updates activity timers
     if topic.startswith("motion/"):
         _handle_motion(topic, p)
         return
 
-    # Hazard topics
     if topic == "hazard/gas":
-        _handle_hazard("gas", p, r, cfg)
-        return
+        _handle_hazard("gas", p, r, cfg); return
     if topic == "hazard/smoke":
-        _handle_hazard("smoke", p, r, cfg)
-        return
+        _handle_hazard("smoke", p, r, cfg); return
     if topic == "hazard/water":
-        _handle_hazard("water", p, r, cfg)
-        return
+        _handle_hazard("water", p, r, cfg); return
     if topic == "hazard/power":
-        _handle_hazard("power", p, r, cfg)
-        return
+        _handle_hazard("power", p, r, cfg); return
 
 
 def _check_in_silent_window() -> bool:
-    """Return True if now is within silent time range like '23:00-06:30'."""
     rng = os.getenv("INACTIVITY_SILENT_RANGE", "23:00-06:00").strip()
     if not rng or "-" not in rng:
         return False
     try:
         a, b = rng.split("-", 1)
-
         def _to_min(s: str) -> int:
             hh, mm = s.split(":")
             return int(hh) * 60 + int(mm)
-
         now = time.localtime()
         now_min = now.tm_hour * 60 + now.tm_min
         a_min, b_min = _to_min(a), _to_min(b)
         if a_min <= b_min:
             return a_min <= now_min <= b_min
-        # overnight window
         return now_min >= a_min or now_min <= b_min
     except Exception:
         return False
 
 
 def _check_inactivity() -> None:
-    """Scan rooms and emit inactivity events with cooldown."""
     if _check_in_silent_window():
         return
     minutes = float(os.getenv("INACTIVITY_MINUTES", "30"))
@@ -242,12 +263,7 @@ def _check_inactivity() -> None:
         if last_ts <= threshold:
             last_alert = _LAST_ALERTED.get(room, 0)
             if now - last_alert >= int(cd_min * 60):
-                fields = {
-                    "kind": "inactivity",
-                    "room": room,
-                    "last_active_ts": last_ts,
-                    "ts": now,
-                }
+                fields = {"kind": "inactivity", "room": room, "last_active_ts": last_ts, "ts": now}
                 try:
                     _xadd(stream, fields)
                 except Exception as e:
@@ -262,6 +278,8 @@ def _check_inactivity() -> None:
                 _LAST_ALERTED[room] = now
                 inc("hazards_detected", 1)
                 mark("last_hazard_ts", now)
+                # Unified events
+                _write_unified_event("inactivity", now, {"room": room, "last_active_ts": last_ts}, severity="warn")
 
 
 def _worker(cfg: HSConfig, r: Redis) -> None:
@@ -270,16 +288,13 @@ def _worker(cfg: HSConfig, r: Redis) -> None:
         try:
             c = _connect_client()
             _last_connect_rc = 0
-            # subscribe
             c.subscribe("hazard/gas", qos=0)
             c.subscribe("hazard/water", qos=0)
             c.subscribe("hazard/power", qos=0)
             c.subscribe("hazard/smoke", qos=0)
             c.subscribe("motion/#", qos=0)
             c.on_message = lambda _c, _u, m: _on_message(cfg, r, _c, m)
-            # background inactivity check every 30s
             last_check = 0
-
             def _loop():
                 nonlocal last_check
                 while _running:
@@ -288,7 +303,6 @@ def _worker(cfg: HSConfig, r: Redis) -> None:
                     if now - last_check >= 30:
                         last_check = now
                         _check_inactivity()
-
             _loop()
         except Exception as e:
             _last_connect_rc = -1
@@ -312,8 +326,4 @@ def stop() -> None:
 
 
 def status() -> dict:
-    return {
-        "running": _running,
-        "last_connect_rc": _last_connect_rc,
-        "last_msg_ts": _last_msg_ts,
-    }
+    return {"running": _running, "last_connect_rc": _last_connect_rc, "last_msg_ts": _last_msg_ts}
