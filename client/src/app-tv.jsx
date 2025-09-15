@@ -9,6 +9,7 @@ import { TV_ROLES } from './lib/roles.js';
 import { WsProvider } from "./components/WsProvider.jsx";
 import WsStatusChip from './components/WsStatusChip.jsx';
 import WsOverlay from "./lib/WsOverlay.jsx";
+import TvEventsTicker from "./components/TvEventsTicker.jsx"; 
 
 export default function AppTv() {
   // Use HashRouter so that multi-page entries like /tv.html do not get replaced to /
@@ -19,6 +20,7 @@ export default function AppTv() {
           <LogoutButton label="Logout" />
           <WsStatusChip align="right" />
           <WsOverlay anchor="top-right" />
+          <TvEventsTicker /> {/* events/hazard overlay */}
           <Routes>
             <Route path="/" element={<TvPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # <-- add CORS for dev
 from .api import vitals as _api_vitals
 from .api import export as _api_export
 from .api import events as _api_events
@@ -71,6 +72,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# --- CORS for development ---
+# Allow Vite (5173) and other local origins to call HM APIs.
+# For production, please tighten allow_origins.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # dev only
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(_api_vitals.router)
 app.include_router(_api_export.router)
 app.include_router(_api_events.router, prefix="")
@@ -79,7 +91,6 @@ app.include_router(_api_events.router, prefix="")
 @app.get("/whoami")
 def whoami():
     import app as _pkg
-
     return {"service": "hm", "import_path": getattr(_pkg, "__file__", "")}
 
 
@@ -135,7 +146,6 @@ def create_app(
     """
     Factory to create app instance with optional background features switched.
     """
-
     if enable_subscriber is not None:
         os.environ["START_SUBSCRIBER"] = "1" if enable_subscriber else "0"
     if enable_scheduler is not None:
