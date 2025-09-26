@@ -370,3 +370,13 @@ server/home-safety-svc/.venv-hs/
 .env
 *.env
 *.env.*
+
+# TV
+*.iml
+.gradle
+/local.properties
+/.idea
+/build
+/captures
+.externalNativeBuild
+.cxx

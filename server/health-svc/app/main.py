@@ -77,7 +77,7 @@ app = FastAPI(lifespan=lifespan)
 # For production, please tighten allow_origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # dev only
+    allow_origins=["*"],  # dev only
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -91,6 +91,7 @@ app.include_router(_api_events.router, prefix="")
 @app.get("/whoami")
 def whoami():
     import app as _pkg
+
     return {"service": "hm", "import_path": getattr(_pkg, "__file__", "")}
 
 

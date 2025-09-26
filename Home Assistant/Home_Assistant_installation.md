@@ -75,3 +75,4 @@ The platform must detect devices running Android \< 5.0 and present an *“Unsup
 **Open questions**  
 - Should the operator portal raise an *incompatible-device* alert for caregivers?  
 - Worth integrating a low-cost IR blaster add-on in the reference hardware kit?
+

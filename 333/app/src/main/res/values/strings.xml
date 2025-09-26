@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">333</string>
+    <string name="cd_body_figure">Body figure</string>
+    <string name="cd_temp">温度图标</string>
+    <string name="cd_humidity">湿度图标</string>
+    <string name="cd_gas">燃气图标</string>
+
+</resources>

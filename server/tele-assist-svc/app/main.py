@@ -1,86 +1,25 @@
-from __future__ import annotations
-
-import os
-import socket
-from contextlib import asynccontextmanager
-
+# server/teleassist-svc/app/main.py
+# FastAPI app entrypoint with REST and WebSocket for signaling
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from .routes.livekit import router as livekit_router
+from fastapi.middleware.cors import CORSMiddleware
+from .routers import calls, signaling
 
+app = FastAPI(title="DORA Teleassist Signaling Service", version="1.0.0")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    try:
-        socket.gethostbyname(os.getenv("TV_HOSTNAME", "tv-svc"))
-        print("[ta] tv-svc dns ok")
-    except Exception as e:
-        print(f"[ta] tv-svc dns failed: {e}")
-    yield
+# CORS: allow all for demo; restrict in production
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Routers
+app.include_router(calls.router, prefix="/api/calls", tags=["calls"])
+app.include_router(signaling.router, tags=["signaling"])
 
-app = FastAPI(lifespan=lifespan)
-
-app.include_router(livekit_router, prefix="/tele/livekit")
-
-_static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-app.mount("/static", StaticFiles(directory=_static_dir), name="static")
-
-
-@app.get("/whoami")
-def whoami():
-    import app as _pkg
-
-    return {"service": "ta", "import_path": getattr(_pkg, "__file__", "")}
-
-
-@app.get("/")
-def index():
-    html = '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=/static/index.html"></head><body></body></html>'
-    return HTMLResponse(content=html, status_code=200)
-
-
-@app.get("/ping")
-def ping():
-    return {"msg": "pong"}
-
-
-@app.get("/health/live")
-def health_live():
-    return {"status": "live"}
-
-
-@app.get("/health/ready")
-def health_ready():
-    ok_dns = False
-    try:
-        socket.gethostbyname(os.getenv("TV_HOSTNAME", "tv-svc"))
-        ok_dns = True
-    except Exception:
-        ok_dns = False
-    return {"tv_dns": ok_dns}
-
-
-def run():
-    import uvicorn
-
-    host = os.getenv("TA_HOST", "0.0.0.0")
-    port = int(os.getenv("TA_PORT", "8300"))
-    uvicorn.run(
-        "app.main:app", host=host, port=port, reload=os.getenv("RELOAD", "0") == "1"
-    )
-
-
-# --- BEGIN PATCH (tele-assist mount /api/intent) ---
-from app.api import intent as _intent_api  # noqa: E402
-
-app.include_router(_intent_api.router)
-# --- END PATCH ---
-from .api.call import router as call_router
-
-app.include_router(call_router)
-
-if __name__ == "__main__":
-
-    run()
+# Healthcheck
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
