@@ -23,8 +23,9 @@ services:
       timeout: 3s
       retries: 6
     # If you want live reload during dev, mount the folder (optional):
-    # volumes:
-    #   - ../../server/tele-assist-svc/app:/app/app
+    volumes:
+      - ../../server/tele-assist-svc/app:/app/app
+    command: ["node", "app/index.js"]
     networks: [dora-net]
 
 networks:

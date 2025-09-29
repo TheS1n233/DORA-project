@@ -9,6 +9,7 @@ import { fetchDevices } from '../lib/services/devices.js';
 import LiveKitPanel from '../components/LiveKitPanel.jsx';
 import WsSwitch from '../components/WsSwitch.jsx';
 import EventsTimeline from '../components/EventsTimeline.jsx';
+import AdminCallElder from '../components/AdminCallElder.jsx';
 
 export default function CaregiverPage() {
   const userName = useMemo(() => {
@@ -31,12 +32,25 @@ export default function CaregiverPage() {
 
   // LiveKit panel state
   const [lkOpen, setLkOpen] = useState(false);
+  const [currentCall, setCurrentCall] = useState(null);
 
   // devices mock/load
   const [devices, setDevices] = useState([]);
   useEffect(() => {
     fetchDevices().then(setDevices).catch(() => setDevices([]));
   }, []);
+
+  const handleCallInitiated = (callData) => {
+    setCurrentCall(callData);
+    // 立即打开LiveKit界面，不显示"正在呼叫"状态
+    setLkOpen(true);
+    console.log('📞 管理员发起呼叫，LiveKit界面已打开');
+  };
+
+  const handleCallEnded = () => {
+    setCurrentCall(null);
+    setLkOpen(false);
+  };
 
   return (
     <div className="layout">
@@ -105,6 +119,14 @@ export default function CaregiverPage() {
           </div>
         </div>
 
+        {/* === NEW: Admin Call Elder Panel === */}
+        <div className="card mt-6">
+          <AdminCallElder 
+            onCallInitiated={handleCallInitiated}
+            onCallEnded={handleCallEnded}
+          />
+        </div>
+
         <div className="card mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold">Tele-assist</h2>
@@ -147,8 +169,9 @@ export default function CaregiverPage() {
         open={lkOpen}
         onClose={() => setLkOpen(false)}
         role="caregiver"
-        room={room || 'demo'}
+        room={currentCall?.room_id || room || 'demo'}
         identity={userName}
+        roomId={currentCall?.room_id}
       />
     </div>
   );

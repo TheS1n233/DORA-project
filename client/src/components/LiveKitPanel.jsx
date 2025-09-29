@@ -10,6 +10,7 @@ export default function LiveKitPanel({
   role = 'elder',     // TV 端默认 elder；Care 端传 caregiver
   room = 'demo',
   identity,           // 调用处传一个 identity（如 "care-1" / "elder-1"）
+  roomId,             // 房间ID，用于通知服务器通话结束
 }) {
   const [state, setState] = useState({ url: '', token: '', loading: false, err: '' });
 
@@ -62,10 +63,81 @@ export default function LiveKitPanel({
           token={state.token}
           serverUrl={state.url}
           data-lk-theme="default"
-          onDisconnected={onClose}
+          onDisconnected={async (reason) => {
+            console.log('LiveKit disconnected, reason:', reason);
+            console.log('🔍 LiveKitPanel roomId:', roomId);
+            
+            // 通知服务器通话结束
+            if (roomId) {
+              console.log('📞 准备通知服务器通话结束，房间ID:', roomId);
+              try {
+                await fetch('http://127.0.0.1:8300/api/calls/end', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    room_id: roomId
+                  }),
+                });
+                console.log('📞 已通知服务器通话结束');
+              } catch (error) {
+                console.error('通知服务器通话结束失败:', error);
+              }
+            }
+            
+            onClose();
+          }}
+          onConnected={() => {
+            console.log('LiveKit connected successfully');
+          }}
+          onError={(error) => {
+            console.error('LiveKit error:', error);
+            onClose();
+          }}
+          onParticipantConnected={(participant) => {
+            console.log('Participant connected:', participant.identity);
+          }}
+          onParticipantDisconnected={async (participant) => {
+            console.log('Participant disconnected:', participant.identity);
+            // When the remote party leaves, we also mark the call as ended on the server
+            if (roomId) {
+              try {
+                await fetch('http://127.0.0.1:8300/api/calls/end', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    room_id: roomId
+                  }),
+                });
+                console.log('📞 已在对方离开时通知服务器通话结束');
+              } catch (error) {
+                console.error('在对方离开时通知服务器失败:', error);
+              }
+            }
+            // Close panel
+            onClose();
+          }}
+          onTrackSubscribed={(track, publication, participant) => {
+            console.log('Track subscribed:', track.kind, 'from', participant.identity);
+          }}
+          onTrackUnsubscribed={(track, publication, participant) => {
+            console.log('Track unsubscribed:', track.kind, 'from', participant.identity);
+          }}
           style={{ width: '100%', height: '100%' }}
         >
-          <VideoConference />
+          <VideoConference 
+            onDisconnected={(reason) => {
+              console.log('VideoConference disconnected, reason:', reason);
+              onClose();
+            }}
+            onParticipantDisconnected={(participant) => {
+              console.log('VideoConference participant disconnected:', participant.identity);
+              onClose();
+            }}
+          />
         </LiveKitRoom>
       </div>
     </div>

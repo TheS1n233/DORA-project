@@ -6,14 +6,12 @@ const router = express.Router();
 
 router.get('/token', async (req, res) => {
   try {
-    const url = process.env.LIVEKIT_URL;
-    const key = process.env.LIVEKIT_KEY;
-    const secret = process.env.LIVEKIT_SECRET;
+    // Use environment variables or fallback to development defaults
+    const url = process.env.LIVEKIT_URL || 'ws://localhost:7880';
+    const key = process.env.LIVEKIT_KEY || 'devkey';
+    const secret = process.env.LIVEKIT_SECRET || 'devsecret';
 
-    if (!url || !key || !secret) {
-      console.error('[LK] missing env', { hasUrl: !!url, hasKey: !!key, hasSecret: !!secret });
-      return res.status(500).json({ error: 'LIVEKIT env missing' });
-    }
+    console.log('[LK] token request', { url, hasKey: !!key, hasSecret: !!secret });
 
     const { room = 'demo', identity = 'guest', role = 'participant' } = req.query;
 

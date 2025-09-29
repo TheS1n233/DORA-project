@@ -1,0 +1,37 @@
+{
+    "project": "DORA",
+    "mission": "通过家庭自动化和语音交互提升老年人健康",
+    "beneficiaries": {
+      "primary": "老年人",
+      "secondary": "家庭与社会"
+    },
+    "modules": {
+      "居家安全": ["跌倒检测", "燃气/用水/电力异常", "门铃/摄像头", "警报"],
+      "健康监测": ["可穿戴", "阈值监控", "健康提醒", "医生数据接入"],
+      "智能电视交互": ["游戏", "内容推送", "日历提醒", "通话", "共同观看"],
+      "远程协助": ["通话", "陪伴", "分诊", "紧急呼叫"]
+    },
+    "ux_rules": {
+      "voice_first": true,
+      "accessibility": true,
+      "error_handling": "平静+可执行+提示下一步",
+      "alarms": "必须播报+记录+升级"
+    },
+    "output_protocol": {
+      "full_code": true,
+      "no_ellipsis": true,
+      "comments": "english",
+      "untouched_code": true
+    },
+    "failover": {
+      "max_retries": 3,
+      "fallback": "重新分析，换角度"
+    },
+    "files": {
+      "dora_structure": "最新目录结构",
+      "requirements": "RequirementsDocument_module1+3.md + RequirementsDocument_module2+4.md (视为一个完整文档)",
+      "official_outline": "DORAproject_instruction.pdf",
+      "tech_specs": ["DORA_Microservice_Architecture_Specification.md", "technologies.md"]
+    }
+  }
+  
