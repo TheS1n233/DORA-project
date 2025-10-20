@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blood Pressure Monitor Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Blood Pressure Monitor Test</h1>
+    
+    <div class="test-section">
+        <h3>1. 设置HA Token</h3>
+        <input type="text" id="haToken" placeholder="输入HA Token" style="width: 300px;">
+        <button onclick="setToken()">设置Token</button>
+        <button onclick="clearToken()">清除Token</button>
+        <div id="tokenStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 测试HA连接</h3>
+        <button onclick="testHAConnection()">测试连接</button>
+        <div id="connectionStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 测试血压数据获取</h3>
+        <button onclick="testBPData()">获取血压数据</button>
+        <div id="bpDataStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 模拟血压传感器</h3>
+        <button onclick="createMockSensors()">创建模拟传感器</button>
+        <div id="mockStatus"></div>
+    </div>
+
+    <script>
+        // 模拟您的BloodPressureMonitor逻辑
+        const HA_BASE_URL = 'http://localhost:8123';
+        
+        function setToken() {
+            const token = document.getElementById('haToken').value;
+            if (token) {
+                localStorage.setItem('HA_TOKEN', token);
+                document.getElementById('tokenStatus').innerHTML = 
+                    '<span class="success">✓ Token已设置: ' + token.substring(0, 10) + '...</span>';
+            } else {
+                document.getElementById('tokenStatus').innerHTML = 
+                    '<span class="error">✗ 请输入Token</span>';
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('HA_TOKEN');
+            document.getElementById('tokenStatus').innerHTML = 
+                '<span class="info">Token已清除</span>';
+        }
+        
+        async function testHAConnection() {
+            const token = localStorage.getItem('HA_TOKEN');
+            if (!token) {
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span class="error">✗ 请先设置Token</span>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${HA_BASE_URL}/api/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('connectionStatus').innerHTML = 
+                        '<span class="success">✓ HA连接成功</span>';
+                } else {
+                    document.getElementById('connectionStatus').innerHTML = 
+                        `<span class="error">✗ HA连接失败: ${response.status}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('connectionStatus').innerHTML = 
+                    `<span class="error">✗ 连接错误: ${error.message}</span>`;
+            }
+        }
+        
+        async function testBPData() {
+            const token = localStorage.getItem('HA_TOKEN');
+            if (!token) {
+                document.getElementById('bpDataStatus').innerHTML = 
+                    '<span class="error">✗ 请先设置Token</span>';
+                return;
+            }
+            
+            const ENTITY_LIST = [
+                'sensor.blood_pressure',
+                'sensor.dora_bp_sys',
+                'sensor.dora_bp_dia',
+                'sensor.dora_bp_hr'
+            ];
+            
+            try {
+                const results = await Promise.allSettled(
+                    ENTITY_LIST.map(async (entityId) => {
+                        const response = await fetch(`${HA_BASE_URL}/api/states/${entityId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!response.ok) throw new Error(`${response.status}`);
+                        return response.json();
+                    })
+                );
+                
+                const summary = {};
+                results.forEach((result, idx) => {
+                    const entityId = ENTITY_LIST[idx];
+                    if (result.status === 'fulfilled') {
+                        summary[entityId] = {
+                            value: result.value.state,
+                            unit: result.value.attributes?.unit_of_measurement,
+                            friendly_name: result.value.attributes?.friendly_name || entityId,
+                            last_changed: result.value.last_changed
+                        };
+                    } else {
+                        summary[entityId] = { error: result.reason.message };
+                    }
+                });
+                
+                document.getElementById('bpDataStatus').innerHTML = 
+                    '<pre>' + JSON.stringify(summary, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('bpDataStatus').innerHTML = 
+                    `<span class="error">✗ 获取数据失败: ${error.message}</span>`;
+            }
+        }
+        
+        async function createMockSensors() {
+            document.getElementById('mockStatus').innerHTML = 
+                '<span class="info">ℹ 请在Home Assistant中手动创建以下传感器:</span><br>' +
+                '<pre>sensor.dora_bp_sys: 120<br>sensor.dora_bp_dia: 80<br>sensor.dora_bp_hr: 75</pre>';
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

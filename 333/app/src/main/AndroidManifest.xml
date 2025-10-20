@@ -2,7 +2,7 @@
 <manifest package="com.example.a333"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 网络与音视频权限 -->
+    <!-- Network and AV permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -20,7 +20,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <!-- TV 启动器；如果不是 TV 启动入口，可移除 LEANBACK 行 -->
+                <!-- TV launcher; remove LEANBACK if not used as TV entry -->
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>

@@ -39,7 +39,7 @@ export default function InlineLogin({ title = 'Login' }) {
           <label className="block text-sm mb-1">Username / Phone</label>
           <input
             className="input w-full"
-            placeholder="care or elder"
+            placeholder="care"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
@@ -73,7 +73,7 @@ export default function InlineLogin({ title = 'Login' }) {
         </button>
       </form>
       <div className="text-xs opacity-70 mt-3">
-        Dev accounts when backend is offline: <code>elder / 123</code>, <code>care / 123</code>.
+        Dev accounts when backend is offline: <code>care / 123456</code>.
       </div>
     </div>
   );

@@ -1,0 +1,28 @@
+# ops/compose/docker-compose.ha-reader.yml
+# HA Data Reader Service for DORA Health Monitoring
+
+services:
+  ha-data-reader:
+    container_name: compose-ha-data-reader
+    image: node:18-alpine
+    working_dir: /app
+    ports:
+      - "9098:9098"
+    environment:
+      - HA_BASE_URL=http://compose-homeassistant:8123
+      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4YjFlYjUwMTlkYjI0MTM2YjAwYjc2ZTVlNjRjZDBkNyIsImlhdCI6MTc1OTI4NzYwOSwiZXhwIjoyMDc0NjQ3NjA5fQ.BeX8HQ5nFLEfbe4AquNth4DfRJEFDmzvxa-6GIk2VaE
+      - HA_READER_PORT=9098
+    volumes:
+      - ../../client/server:/app
+    command: ["node", "ha_data_reader.js"]
+    depends_on:
+      - homeassistant
+    networks: [dora-net]
+    restart: unless-stopped
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net
+
+

@@ -81,13 +81,14 @@ curl -s -X POST http://127.0.0.1:8300/api/intent \
 ## 4. Compose 模式（可选）
 ```bash
 docker compose \
-  -f ops/compose/docker-compose.mqtt.yml \
+  -f ops/compose/docker-compose.ha.yml \
   -f ops/compose/docker-compose.hs.yml \
   -f ops/compose/docker-compose.hm.yml \
   -f ops/compose/docker-compose.tv.yml \
   -f ops/compose/docker-compose.ta.yml \
   -f ops/compose/docker-compose.as.yml \
   -f ops/compose/docker-compose.client.yml \
+  -f ops/compose/docker-compose.ha-reader.yml \
   up -d
 ```
 ↑👆↑👆↑👆↑👆up -d只是直接启动已有的镜像容器

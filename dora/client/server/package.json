@@ -1,0 +1,20 @@
+{
+  "name": "dora-ha-bridge",
+  "version": "1.0.0",
+  "description": "DORA Home Assistant Bridge Service",
+  "main": "ha_bridge.js",
+  "scripts": {
+    "start": "node ha_bridge.js",
+    "dev": "node ha_bridge.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
+

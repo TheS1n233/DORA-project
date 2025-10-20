@@ -19,14 +19,27 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
+      open: false,
+      host: true,
       proxy: {
-        // 业务 REST —— 走 tv-svc
+        // 业务 REST —— 走 HA数据读取服务
         '/api': {
-          target: TV_ORIGIN,
+          target: 'http://localhost:9098',
           changeOrigin: true,
         },
-        // Tele-assist（LiveKit token）—— 走 tele-assist-svc
-        '/tele': {
+        // 健康监测服务 —— 走 health-monitoring-svc
+        '/v1': {
+          target: 'http://localhost:8088',
+          changeOrigin: true,
+        },
+        // Tele-assist API calls —— 走 tele-assist-svc，重写路径
+        '/tele/api': {
+          target: TA_ORIGIN,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/tele/, ''),
+        },
+        // Tele-assist LiveKit token —— 走 tele-assist-svc，不重写路径
+        '/tele/livekit': {
           target: TA_ORIGIN,
           changeOrigin: true,
         },

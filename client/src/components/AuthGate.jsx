@@ -7,16 +7,14 @@ function currentEntry() {
   // detect which html entry we are on
   const p = String(window.location.pathname || '');
   if (p.includes('care.html')) return 'care';
-  if (p.includes('tv.html')) return 'tv';
-  // default to tv for root redirection cases
-  return 'tv';
+  // default to care for all cases
+  return 'care';
 }
 
 function choosePortalUrl(user) {
   const roles = (user && Array.isArray(user.roles)) ? user.roles : [];
-  // caregiver first
+  // caregiver only
   if (roles.includes('caregiver')) return '/care.html#/';
-  if (roles.includes('elder')) return '/tv.html#/';
   // fallback
   return '/care.html#/';
 }

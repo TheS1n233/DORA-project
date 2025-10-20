@@ -1,0 +1,43 @@
+# ops/compose/docker-compose.ha.yml
+# Home Assistant for DORA Health Monitoring
+
+services:
+  homeassistant:
+    container_name: compose-homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ha-config:/config
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8123:8123"
+    environment:
+      - TZ=Europe/Rome
+    restart: unless-stopped
+    networks: [dora-net]
+    depends_on:
+      - mosquitto
+
+  # MQTT Broker (如果还没有的话)
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: compose-mosquitto-ha
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-logs:/mosquitto/log
+    networks: [dora-net]
+    restart: unless-stopped
+
+volumes:
+  ha-config:
+  mosquitto-data:
+  mosquitto-logs:
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net
+
+

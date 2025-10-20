@@ -1,0 +1,84 @@
+# Home Assistant Configuration for DORA Health Monitoring
+# Place this in your Home Assistant configuration.yaml
+
+# MQTT Configuration
+mqtt:
+  broker: compose-mosquitto-ha
+  port: 1883
+
+# Health Device Sensors
+sensor:
+  # Blood Pressure Monitor (Omron)
+  - platform: mqtt
+    name: "Omron Blood Pressure"
+    state_topic: "homeassistant/sensor/omron_bp/blood_pressure/state"
+    value_template: "{{ value_json.systolic }}/{{ value_json.diastolic }}"
+    unit_of_measurement: "mmHg"
+    device_class: pressure
+    
+  # Heart Rate Monitor
+  - platform: mqtt
+    name: "Heart Rate"
+    state_topic: "homeassistant/sensor/fitbit_hr/heart_rate/state"
+    unit_of_measurement: "bpm"
+    device_class: heart_rate
+    
+  # Blood Oxygen
+  - platform: mqtt
+    name: "Blood Oxygen"
+    state_topic: "homeassistant/sensor/apple_watch/spo2/state"
+    unit_of_measurement: "%"
+    device_class: oxygen
+    
+  # Body Temperature
+  - platform: mqtt
+    name: "Body Temperature"
+    state_topic: "homeassistant/sensor/apple_watch/temperature/state"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    
+  # Weight Scale
+  - platform: mqtt
+    name: "Weight"
+    state_topic: "homeassistant/sensor/xiaomi_scale/weight/state"
+    unit_of_measurement: "kg"
+    device_class: weight
+    
+  # Step Counter
+  - platform: mqtt
+    name: "Steps"
+    state_topic: "homeassistant/sensor/fitbit_hr/steps/state"
+    unit_of_measurement: "steps"
+    device_class: steps
+
+# Automation for Health Alerts
+automation:
+  - alias: "High Blood Pressure Alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.omron_blood_pressure
+        above: 140
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "homeassistant/alert/blood_pressure_high"
+          payload: "High blood pressure detected: {{ states('sensor.omron_blood_pressure') }}"
+          
+  - alias: "Critical Blood Pressure Alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.omron_blood_pressure
+        above: 180
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "homeassistant/alert/blood_pressure_critical"
+          payload: "CRITICAL: Blood pressure dangerously high: {{ states('sensor.omron_blood_pressure') }}"
+
+# Dashboard for Health Monitoring
+panel_custom:
+  - name: health_dashboard
+    sidebar_title: Health
+    sidebar_icon: mdi:heart-pulse
+    url_path: health-dashboard
+    module_url: /local/health-dashboard.js

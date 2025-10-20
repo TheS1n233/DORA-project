@@ -6,7 +6,7 @@ import { login, isAuthed } from '../lib/auth'
 export default function LoginPage() {
   const navigate = useNavigate()
   const [sp] = useSearchParams()
-  const next = sp.get('next') || '/tv?room=demo'
+  const next = sp.get('next') || '/caregiver'
 
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')

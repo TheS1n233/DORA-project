@@ -1,43 +1,84 @@
+# ops/compose/docker-compose.hm.yml
+# Health Monitoring services for DORA project
+
 services:
-  health-svc:
-    build:
-      context: ../../server/health-svc
-      dockerfile: Dockerfile
-    image: dora/health-svc:${DORA_TAG:-local}
-    working_dir: /app
-    volumes:
-      - ../../server/health-svc:/app
-      - ../../scripts:/scripts:ro
-    command: >
-      sh -lc "
-      RUN_CMD='uvicorn app.main:app --host 0.0.0.0 --port 8100';
-      if [ \"${RELOAD:-false}\" = \"true\" ]; then RUN_CMD=\"$${RUN_CMD} --reload\"; fi;
-      echo \"[hm] start: $${RUN_CMD}\";
-      exec $${RUN_CMD}
-      "
-    environment:
-      # Fix to internal service DNS names within compose network
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      MQTT_HOST: mosquitto
-      MQTT_PORT: "1883"
-      HM_AES_KEY: ""
-      START_SUBSCRIBER: "true"
-      START_SCHEDULER: "false"   # <<< disable scheduler for now
-      RELOAD: "false"
-    depends_on:
-      - redis
-    networks:
-      - dora-net
+  influxdb:
+    image: influxdb:2.7
+    container_name: compose-influxdb
     ports:
-      - "8100:8100"
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=dora
+      - DOCKER_INFLUXDB_INIT_BUCKET=vitals
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=dev-token
+    volumes:
+      - influx-data:/var/lib/influxdb2
+    networks: [dora-net]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: compose-redis
+    ports:
+      - "6379:6379"
+    networks: [dora-net]
+    restart: unless-stopped
+
+  health-svc:
+    container_name: compose-health-svc
+    image: compose-health-svc
+    build:
+      context: ../../health_monitoring_service
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8080"
+    env_file:
+      - ../../health_monitoring.env
+    depends_on:
+      - influxdb
+      - redis
+    networks: [dora-net]
+    restart: unless-stopped
     healthcheck:
-      # English comments only
-      test: ["CMD-SHELL", "python - <<'PY'\nimport urllib.request,sys\ntry:\n  urllib.request.urlopen('http://127.0.0.1:8100/health/live',timeout=2)\n  sys.exit(0)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8080/docs || exit 1"]
       interval: 10s
       timeout: 3s
-      retries: 30
-      start_period: 30s
+      retries: 6
+
+  ha-mqtt-bridge:
+    container_name: compose-ha-mqtt-bridge
+    image: compose-ha-mqtt-bridge
+    build:
+      context: ../../home_assistant_integration
+      dockerfile: Dockerfile
+    environment:
+      - MQTT_BROKER=compose-mosquitto-1
+      - MQTT_PORT=1883
+      - HM_SERVICE_URL=http://health-svc:8080
+      - USER_ID=user-001
+    depends_on:
+      - health-svc
+    networks: [dora-net]
+    restart: unless-stopped
+
+  ha-device-simulator:
+    container_name: compose-ha-device-simulator
+    image: compose-ha-mqtt-bridge
+    build:
+      context: ../../home_assistant_integration
+      dockerfile: Dockerfile
+    command: ["python", "/app/ha_device_simulator.py"]
+    environment:
+      - MQTT_BROKER=compose-mosquitto-ha
+      - MQTT_PORT=1883
+    networks: [dora-net]
+    restart: "no"  # Run once for testing
+
+volumes:
+  influx-data:
 
 networks:
   dora-net:

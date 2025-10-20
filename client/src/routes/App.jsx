@@ -1,6 +1,6 @@
 // English comments only
 import React from 'react'
-import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import LoginPage from './LoginPage'
 import TvPage from './TvPage'
@@ -24,7 +24,7 @@ function TopNav() {
       <span className="font-semibold">DORA Client</span>
       <div className="ml-auto flex items-center gap-2">
         <Link to="/tv?room=demo"><button className={`btn ${loc.pathname.startsWith('/tv') ? '!bg-slate-900 !text-white !border-slate-900' : ''}`}>TV</button></Link>
-        <Link to="/caregiver?room=demo"><button className={`btn ${loc.pathname.startsWith('/caregiver') ? '!bg-slate-900 !text-white !border-slate-900' : ''}`}>Caregiver</button></Link>
+        <Link to="/caregiver"><button className={`btn ${loc.pathname.startsWith('/caregiver') ? '!bg-slate-900 !text-white !border-slate-900' : ''}`}>Caregiver</button></Link>
         <Link to="/dashboard"><button className={`btn ${loc.pathname.startsWith('/dashboard') ? '!bg-slate-900 !text-white !border-slate-900' : ''}`}>Dashboard</button></Link>
         {authed && <button className="btn" onClick={onLogout}>Logout</button>}
       </div>
@@ -38,12 +38,14 @@ export default function AppRouter() {
       <TopNav />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/tv" element={<TvPage />} />
           <Route path="/caregiver" element={<CaregiverPage />} />
+          <Route path="/caregiver/*" element={<CaregiverPage />} />
+          <Route path="/tv" element={<TvPage />} />
           <Route path="/dashboard" element={<HealthDashboard />} />
-          <Route path="*" element={<TvPage />} />
         </Route>
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )

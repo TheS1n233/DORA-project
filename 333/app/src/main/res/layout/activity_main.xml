@@ -16,14 +16,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- ScrollView 里唯一的直接子元素 -->
+        <!-- Root LinearLayout -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- 顶部信息条 -->
+            <!-- Top bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -77,7 +77,7 @@
 
             <Space android:layout_width="match_parent" android:layout_height="20dp"/>
 
-            <!-- 视频通话区域 - 全屏显示 -->
+            <!-- Video call area -->
             <FrameLayout
                 android:id="@+id/videoCallContainer"
                 android:layout_width="match_parent"
@@ -85,14 +85,14 @@
                 android:background="#000000"
                 android:visibility="gone">
                 
-                <!-- 远程视频显示区域 - 全屏 -->
+                <!-- Remote video -->
                 <SurfaceView
                     android:id="@+id/remoteVideoView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="#000000"/>
                 
-                <!-- 通话信息覆盖层 -->
+                <!-- Call info overlay -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -103,7 +103,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📞 视频通话中"
+                        android:text="📞 In call"
                         android:textSize="24sp"
                         android:textStyle="bold"
                         android:textColor="#FFFFFF"
@@ -116,7 +116,7 @@
                         android:id="@+id/callStatusText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="正在连接..."
+                        android:text="Connecting..."
                         android:textSize="18sp"
                         android:textColor="#CCCCCC"
                         android:layout_marginTop="8dp"
@@ -126,7 +126,7 @@
                         android:shadowRadius="2"/>
                 </LinearLayout>
                 
-                <!-- 本地视频显示区域 - 右下角小窗口 -->
+                <!-- Local video (pip) -->
                 <SurfaceView
                     android:id="@+id/localVideoView"
                     android:layout_width="200dp"
@@ -136,7 +136,7 @@
                     android:background="#333333"
                     android:elevation="8dp"/>
                 
-                <!-- 通话控制按钮 -->
+                <!-- Call controls -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -178,7 +178,7 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- 第一行：Home status + Health + Calendar -->
+            <!-- Row 1: Home + Health + Calendar -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -204,6 +204,17 @@
                     android:background="#FF6B6B"
                     android:textColor="#FFFFFF"
                     android:visibility="gone" />
+                    
+                <Button
+                    android:id="@+id/btnTestCall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:text="Test Call Check"
+                    android:background="#4CAF50"
+                    android:textColor="#FFFFFF" />
             </LinearLayout>
 
             <LinearLayout
@@ -229,13 +240,13 @@
                         android:text="Home status"/>
 
                     <Space android:layout_width="match_parent" android:layout_height="8dp"/>
-                    <!-- 三块：温度 / 湿度 / 燃气 -->
+                    <!-- three tiles: temp/humidity/gas -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:weightSum="3"
                         android:orientation="horizontal">
-                        <!-- 温度 -->
+                        <!-- temperature -->
                         <LinearLayout
                             android:id="@+id/tileTemp"
                             android:layout_width="0dp"
@@ -277,7 +288,7 @@
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
 
-                <!-- 健康诊断 -->
+                <!-- Health panel -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="220dp"
@@ -355,7 +366,7 @@
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
 
-                <!-- 日历（周一行） + 今日行程 -->
+                <!-- Calendar -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="220dp"
@@ -408,13 +419,13 @@
 
             <Space android:layout_width="match_parent" android:layout_height="16dp"/>
 
-            <!-- 第二行：Blood pressure + Your activity + Heart rate -->
+            <!-- Row 2: Blood pressure + Activity + Heart rate -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <!-- 血压趋势（占位） -->
+                <!-- Blood pressure (placeholder) -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="160dp"
@@ -441,7 +452,7 @@
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
 
-                <!-- 活动柱状（占位） -->
+                <!-- Activity (placeholder) -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="160dp"
@@ -480,7 +491,7 @@
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
 
-                <!-- 心率 -->
+                <!-- Heart rate -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="160dp"
@@ -508,7 +519,7 @@
 
             <Space android:layout_width="match_parent" android:layout_height="24dp"/>
 
-        </LinearLayout>  <!-- root LinearLayout 结束 -->
-    </ScrollView>       <!-- ScrollView 结束 -->
+        </LinearLayout>  <!-- root LinearLayout end -->
+    </ScrollView>       <!-- ScrollView end -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

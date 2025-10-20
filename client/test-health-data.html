@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Health Data Test</title>
+</head>
+<body>
+    <h1>Health Data Test</h1>
+    <button onclick="testHealthData()">Test Health Data</button>
+    <button onclick="testBPData()">Test BP Data</button>
+    <button onclick="testSimulateBP()">Test Simulate BP</button>
+    <div id="result"></div>
+
+    <script>
+        async function testHealthData() {
+            try {
+                const response = await fetch('/api/health-data');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testBPData() {
+            try {
+                const response = await fetch('/api/bp-data');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testSimulateBP() {
+            try {
+                const response = await fetch('/v1/vitals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_id: 'admin-simulator',
+                        user_id: 'user-001',
+                        metric: 'blood_pressure',
+                        systolic: 120,
+                        diastolic: 80,
+                        pulse: 70,
+                        unit: 'mmHg'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
+
+

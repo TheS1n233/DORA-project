@@ -1,25 +1,2 @@
-name: compose
-
-services:
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - dora-net
-
-  mosquitto:
-    image: eclipse-mosquitto:2
-    restart: unless-stopped
-    ports:
-      - "1883:1883"
-    volumes:
-      - ../../.local/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-    networks:
-      - dora-net
-
-networks:
-  dora-net:
-    external: true
-    name: compose_dora-net
+# MQTT配置文件 - 已合并到 docker-compose.ha.yml 中
+# 此文件保留为空，避免重复定义 mosquitto 和 redis 服务
