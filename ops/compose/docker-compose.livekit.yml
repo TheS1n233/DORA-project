@@ -1,0 +1,35 @@
+# ops/compose/docker-compose.livekit.yml
+services:
+  livekit:
+    container_name: compose-livekit
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    ports:
+      - "7880:7880"  # WebSocket
+      - "7881:7881"  # RTC
+    environment:
+      LIVEKIT_KEYS: "devkey: devsecret"
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          port_range_start: 50000
+          port_range_end: 60000
+        redis:
+          address: redis:6379
+    networks: [dora-net]
+    depends_on:
+      - redis
+
+  redis:
+    container_name: compose-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks: [dora-net]
+
+networks:
+  dora-net:
+    external: true
+    name: compose_dora-net
+

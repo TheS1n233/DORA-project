@@ -23,7 +23,12 @@ app.get("/healthz", (_req, res) => {
 app.get("/tele/livekit/token", async (req, res) => {
   try {
     // Use environment variables or fallback to development defaults
-    const url = process.env.LIVEKIT_URL || 'wss://doratele-wmf8rq69.livekit.cloud';
+    // For Android emulator, use 10.0.2.2; for web, use localhost
+    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const isAndroidEmulator = clientIP === '127.0.0.1' || clientIP === '::1';
+    const baseUrl = isAndroidEmulator ? 'ws://10.0.2.2:7880' : 'ws://localhost:7880';
+    
+    const url = process.env.LIVEKIT_URL || baseUrl;
     const key = process.env.LIVEKIT_KEY || 'devkey';
     const secret = process.env.LIVEKIT_SECRET || 'devsecret';
 

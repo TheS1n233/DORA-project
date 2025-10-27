@@ -59,6 +59,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Initialize LiveKit and create Room correctly
+        // ✅ Correct way: create Room with proper LiveKit API
+        room = LiveKit.create(applicationContext)
+
         weekRv = findViewById(R.id.weekRecycler)
         monthTitle = findViewById(R.id.tvMonthTitle)
 
@@ -101,9 +105,6 @@ class MainActivity : AppCompatActivity() {
         btnCamera.setOnClickListener {
             Toast.makeText(this, "Camera control is not implemented", Toast.LENGTH_SHORT).show()
         }
-
-        // Init LiveKit
-        room = LiveKit.create(applicationContext)
 
         // Start polling incoming calls
         startCallCheck()
@@ -165,9 +166,17 @@ class MainActivity : AppCompatActivity() {
 
                     Log.i("DORA/TV", "Token received - URL: $livekitUrl, Token: ${token.take(20)}...")
 
+                    // ✅ Only map localhost/127.0.0.1 to Android emulator gateway.
+                    // ❌ Do NOT force replace cloud wss URL to local ws.
+                    val fixedUrl = livekitUrl
+                        .replace("127.0.0.1", "10.0.2.2")
+                        .replace("localhost", "10.0.2.2")
+
+                    Log.i("DORA/TV", "Fixed URL for Android: $fixedUrl")
+
                     runOnUiThread {
                         Toast.makeText(this, "Connecting call...", Toast.LENGTH_SHORT).show()
-                        connectToLiveKitRoom(livekitUrl, token)
+                        connectToLiveKitRoom(fixedUrl, token)
                     }
                 } else {
                     Log.e("DORA/TV", "Token request failed with code: $code")
@@ -187,16 +196,11 @@ class MainActivity : AppCompatActivity() {
     // Connect to LiveKit room for voice call
     private fun connectToLiveKitRoom(url: String, token: String) {
         try {
-            Log.i("DORA/TV", "LiveKit connection requested - URL: $url, Token: ${token.take(20)}...")
+            isInCall = true
+            // ❌ Do not create Room() directly
+            // room = Room()  // <-- remove this
+            // ✅ Use the Room created in onCreate()
 
-            runOnUiThread {
-                Toast.makeText(this, "Connecting call...", Toast.LENGTH_SHORT).show()
-                isInCall = true
-                // Show end call button
-                findViewById<Button>(R.id.btnEndCall)?.visibility = View.VISIBLE
-            }
-
-            // Connect via coroutine
             coroutineScope.launch {
                 try {
                     Log.i("DORA/TV", "Attempting to connect to LiveKit room...")

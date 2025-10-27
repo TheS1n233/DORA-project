@@ -95,13 +95,14 @@ docker compose \
 ↓👇↓👇↓👇↓👇up -d --build是重建
 ```bash
 docker compose \
-  -f ops/compose/docker-compose.mqtt.yml \
-  -f ops/compose/docker-compose.hm.yml \
+  -f ops/compose/docker-compose.ha.yml \
   -f ops/compose/docker-compose.hs.yml \
+  -f ops/compose/docker-compose.hm.yml \
   -f ops/compose/docker-compose.tv.yml \
   -f ops/compose/docker-compose.ta.yml \
   -f ops/compose/docker-compose.as.yml \
   -f ops/compose/docker-compose.client.yml \
+  -f ops/compose/docker-compose.ha-reader.yml \
   up -d --build
 ```
 
@@ -167,3 +168,4 @@ curl -s -X POST http://127.0.0.1:8300/api/call/hang \
   -H 'Content-Type: application/json' -d '{"room":"demo"}' | jq .
 ```
 ### 备注：Jitsi 仅作占位；后续可替换为本地 WebRTC。
+
