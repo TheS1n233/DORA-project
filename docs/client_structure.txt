@@ -1,0 +1,77 @@
+/workspaces/dora/client
+├── .env
+├── .env.example
+├── .env.local
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── care.html
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── public
+│   └── vite.svg
+├── src
+│   ├── App.css
+│   ├── App.jsx
+│   ├── app-care.jsx
+│   ├── app-tv.jsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── AlertOverlay.jsx
+│   │   ├── AlertsPanel.jsx
+│   │   ├── AuthGate.jsx
+│   │   ├── EnvStatCard.jsx
+│   │   ├── FhirExportButton.jsx
+│   │   ├── HealthStatCard.jsx
+│   │   ├── InlineLogin.jsx
+│   │   ├── LiveKitPanel.jsx
+│   │   ├── LogoutButton.jsx
+│   │   ├── Recommendations.jsx
+│   │   ├── RecommendationsCard.jsx
+│   │   ├── TvCompatBanner.jsx
+│   │   ├── VoiceAssistantHUD.jsx
+│   │   ├── VoiceAssistantIcon.jsx
+│   │   ├── WsProvider.jsx
+│   │   ├── WsStatusChip.jsx
+│   │   └── WsSwitch.jsx
+│   ├── entry-care.jsx
+│   ├── entry-tv.jsx
+│   ├── index.css
+│   ├── lib
+│   │   ├── WsOverlay.jsx
+│   │   ├── api.js
+│   │   ├── api_auth.js
+│   │   ├── auth.js
+│   │   ├── http.js
+│   │   ├── roles.js
+│   │   ├── services
+│   │   │   ├── alerts.js
+│   │   │   ├── devices.js
+│   │   │   ├── health.js
+│   │   │   ├── livekit.js
+│   │   │   ├── reco.js
+│   │   │   ├── recommendations.js
+│   │   │   └── teleassist.js
+│   │   ├── useWs.js
+│   │   └── ws_client.js
+│   ├── main.jsx
+│   ├── routes
+│   │   ├── App.jsx
+│   │   ├── CaregiverPage.jsx
+│   │   ├── HealthDashboard.jsx
+│   │   ├── LoginPage.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── TvPage.jsx
+│   │   └── _ErrorBoundary.jsx
+│   └── styles
+│       ├── index.css
+│       └── theme-green.css
+├── tailwind.config.js
+├── tv.html
+└── vite.config.js
+
+9 directories, 66 files

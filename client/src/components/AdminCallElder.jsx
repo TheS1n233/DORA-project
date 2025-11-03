@@ -1,20 +1,30 @@
 // client/src/components/AdminCallElder.jsx
 import React, { useState, useEffect } from 'react';
 
-export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
-  const [elderId, setElderId] = useState('');
+export default function AdminCallElder({ onCallInitiated, onCallEnded, selectedPerson }) {
+  // Default to Grandma Zhang (elder-001 = Ms Zhang)
+  // NOTE: Always use elder-001 for actual API calls, but display name changes based on selectedPerson
+  const elderId = 'elder-001';
   const [callType, setCallType] = useState('regular');
   const [message, setMessage] = useState('');
   const [isCalling, setIsCalling] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
   const [callStatus, setCallStatus] = useState(''); // call status
 
-  // Mock elder list - in production, this would come from an API
-  const elderList = [
-    { id: 'elder-001', name: 'Ms Zhang', status: 'online' },
-    { id: 'elder-002', name: 'Mr Li', status: 'online' },
-    { id: 'elder-003', name: 'Ms Wang', status: 'offline' },
-  ];
+  // Person name mapping (display only)
+  const personNameMap = {
+    'ms-zhang': 'Grandma Zhang',
+    'mrs-ma': 'MRS.Ma',
+    'mr-li': 'MR.Li'
+  };
+
+  // Display name changes based on selectedPerson, but always calls elder-001
+  const displayName = personNameMap[selectedPerson] || 'Grandma Zhang';
+  const elderInfo = {
+    id: 'elder-001',
+    name: displayName,
+    status: 'online'
+  };
 
   // Poll call status
   useEffect(() => {
@@ -78,13 +88,8 @@ export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
     { value: 'emergency', label: 'Emergency', color: 'bg-red-500' },
   ];
 
-  // Call elder
+  // Call elder (always calls Grandma Zhang)
   const handleCallElder = async () => {
-    if (!elderId) {
-      alert('Please select an elder');
-      return;
-    }
-
     setIsCalling(true);
     
     try {
@@ -95,7 +100,7 @@ export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
         },
         body: JSON.stringify({
           admin_id: 'admin-001',
-          elder_id: elderId,
+          elder_id: elderId, // Always Grandma Zhang
           call_type: callType,
           message: message || 'Hello, this is the caregiver. I would like to talk with you.',
         }),
@@ -110,7 +115,7 @@ export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
       // open LiveKit UI
       onCallInitiated?.(result);
       
-      console.log(`📞 Calling ${elderList.find(e => e.id === elderId)?.name || elderId}...`);
+      console.log(`📞 Calling ${elderInfo.name}...`);
     } catch (error) {
       console.error('Call failed:', error);
       alert('Call failed, please retry');
@@ -156,42 +161,41 @@ export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
     onCallEnded?.();
   };
 
-  const selectedElder = elderList.find(e => e.id === elderId);
-
   return (
-    <div className="card">
-      <h2 className="font-bold mb-4">Call Elder</h2>
+    <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-lg border border-blue-200">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl">
+          📞
+        </div>
+        <h2 className="text-3xl font-bold text-gray-800">Call Elder</h2>
+      </div>
       
-      {/* Elder Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Select elder</label>
-        <select
-          value={elderId}
-          onChange={(e) => setElderId(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md"
-          disabled={isCalling}
-        >
-          <option value="">Please choose</option>
-          {elderList.map(elder => (
-            <option key={elder.id} value={elder.id}>
-              {elder.name} ({elder.status === 'online' ? 'online' : 'offline'})
-            </option>
-          ))}
-        </select>
+      {/* Elder Info (Fixed to Grandma Zhang) */}
+      <div className="mb-6 p-4 bg-white rounded-xl border-2 border-blue-200 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${
+            elderInfo.status === 'online' ? 'bg-green-500' : 'bg-red-500'
+          }`}></div>
+          <span className="text-lg font-semibold text-gray-800">
+            Calling: {elderInfo.name} ({elderInfo.status === 'online' ? '🟢 online' : '🔴 offline'})
+          </span>
+        </div>
       </div>
 
       {/* Call Type Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Call type</label>
-        <div className="flex gap-2">
+      <div className="mb-6">
+        <label className="block text-lg font-semibold text-gray-700 mb-3">
+          📋 Call Type
+        </label>
+        <div className="grid grid-cols-3 gap-3">
           {callTypes.map(type => (
             <button
               key={type.value}
               onClick={() => setCallType(type.value)}
-              className={`px-3 py-1 rounded-md text-sm ${
+              className={`px-4 py-3 rounded-xl text-white font-semibold transition-all duration-200 transform hover:scale-105 shadow-md ${
                 callType === type.value 
-                  ? `${type.color} text-white` 
-                  : 'bg-gray-200 text-gray-700'
+                  ? `${type.color} shadow-lg` 
+                  : 'bg-gray-400 hover:bg-gray-500'
               }`}
               disabled={isCalling}
             >
@@ -202,66 +206,66 @@ export default function AdminCallElder({ onCallInitiated, onCallEnded }) {
       </div>
 
       {/* Optional Message */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Message (optional)</label>
+      <div className="mb-8">
+        <label className="block text-lg font-semibold text-gray-700 mb-3">
+          💬 Message (optional)
+        </label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a note to the elder..."
-          className="w-full p-2 border border-gray-300 rounded-md h-20"
+          placeholder="Enter a message to the elder..."
+          className="w-full p-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24 resize-none text-lg bg-white shadow-sm transition-all duration-200"
           disabled={isCalling}
         />
       </div>
 
       {/* Call status */}
       {currentCall && callStatus && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-            <span className="text-sm font-medium text-blue-700">
-              {callStatus}
+        <div className="mb-6 p-4 bg-white rounded-xl border-2 border-blue-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
+            <span className="text-lg font-semibold text-blue-700">
+              📊 {callStatus}
             </span>
           </div>
         </div>
       )}
 
       {/* Call/Cancel buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-4">
         {!currentCall ? (
           <button
             onClick={handleCallElder}
-            disabled={!elderId || isCalling}
-            className={`px-4 py-2 rounded-md font-medium ${
-              !elderId || isCalling
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-500 text-white hover:bg-green-600'
+            disabled={isCalling}
+            className={`px-8 py-4 rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-lg ${
+              isCalling
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-xl'
             }`}
           >
-            {isCalling ? 'Calling...' : '📞 Call elder'}
+            {isCalling ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Calling...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span>📞</span>
+                <span>Call Elder</span>
+              </div>
+            )}
           </button>
         ) : (
           <button
             onClick={handleCancelCall}
-            className="px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600"
+            className="px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2"
           >
-            ❌ Cancel
+            <span>❌</span>
+            <span>Cancel</span>
           </button>
         )}
       </div>
 
-      {/* Elder Status Indicator */}
-      {selectedElder && (
-        <div className="mt-3 p-2 bg-gray-50 rounded-md">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              selectedElder.status === 'online' ? 'bg-green-500' : 'bg-red-500'
-            }`}></div>
-            <span className="text-sm text-gray-600">
-              {selectedElder.name} - {selectedElder.status === 'online' ? 'online' : 'offline'}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

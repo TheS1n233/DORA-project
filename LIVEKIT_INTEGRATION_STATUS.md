@@ -1,139 +1,139 @@
-# LiveKit 集成状态报告
+# LiveKit Integration Status Report
 
-## ✅ 已完成的功能
+## ✅ Completed Features
 
-### 1. 后端API (tele-assist-svc:8300)
-- ✅ 管理员发起呼叫: `POST /api/calls/admin/call-elder`
-- ✅ 老人查看待接听呼叫: `GET /api/calls/elder/pending-calls/{elder_id}`
-- ✅ 老人接听/拒绝呼叫: `POST /api/calls/answer`
-- ✅ LiveKit token生成: `GET /tele/livekit/token`
-- ✅ 呼叫历史管理: `GET /api/calls/admin/calls`
-- ✅ 呼叫日志记录: `GET /api/calls/logs`
+### 1. Backend API (tele-assist-svc:8300)
+- ✅ Admin initiates call: `POST /api/calls/admin/call-elder`
+- ✅ Elder views pending calls: `GET /api/calls/elder/pending-calls/{elder_id}`
+- ✅ Elder answers/rejects call: `POST /api/calls/answer`
+- ✅ LiveKit token generation: `GET /tele/livekit/token`
+- ✅ Call history management: `GET /api/calls/admin/calls`
+- ✅ Call log recording: `GET /api/calls/logs`
 
-### 2. 管理员端前端 (care.html)
-- ✅ 集成在现有的 `CaregiverPage.jsx` 中
-- ✅ 选择老人、呼叫类型、留言功能
-- ✅ 实时显示呼叫状态
-- ✅ LiveKit面板集成
-- ✅ 修复了界面一闪而过的问题
+### 2. Admin Frontend (care.html)
+- ✅ Integrated in existing `CaregiverPage.jsx`
+- ✅ Select elder, call type, message functionality
+- ✅ Real-time call status display
+- ✅ LiveKit panel integration
+- ✅ Fixed UI flicker issue
 
-### 3. Android端基础功能 (333应用)
-- ✅ 自动检测管理员呼叫 (每5秒轮询)
-- ✅ 弹出接听/拒绝对话框
-- ✅ 接听后调用后端API
-- ✅ 获取LiveKit token
-- ✅ 添加了挂断按钮UI
+### 3. Android End Basic Functions (333 app)
+- ✅ Auto-detect admin calls (poll every 5 seconds)
+- ✅ Pop up answer/reject dialog
+- ✅ Call backend API after answering
+- ✅ Get LiveKit token
+- ✅ Added hang up button UI
 
-## 🔧 当前LiveKit集成状态
+## 🔧 Current LiveKit Integration Status
 
-### Android端LiveKit实现
+### Android LiveKit Implementation
 ```kotlin
-// 已添加正确的LiveKit SDK依赖
+// Added correct LiveKit SDK dependency
 implementation("io.livekit:livekit-android:2.9.0")
 
-// 已实现正确的API调用
+// Implemented correct API calls
 import io.livekit.android.LiveKit
 import io.livekit.android.room.Room
 import io.livekit.android.room.participant.RemoteParticipant
 
-// 已实现连接逻辑
+// Implemented connection logic
 room = LiveKit.create(applicationContext)
 room.connect(url, token)
 
-// 已实现事件监听
+// Implemented event listeners
 room.addListener(object : Room.Listener {
     override fun onConnected(room: Room) {
-        // 启用麦克风
+        // Enable microphone
         room.localParticipant.setMicrophoneEnabled(true)
     }
-    // ... 其他事件处理
+    // ... other event handling
 })
 ```
 
-## 🚧 需要解决的问题
+## 🚧 Issues to Resolve
 
-### 1. Java环境配置
-- 问题：`JAVA_HOME is not set`
-- 解决：需要在Android Studio中配置Java环境
+### 1. Java Environment Configuration
+- Issue: `JAVA_HOME is not set`
+- Solution: Need to configure Java environment in Android Studio
 
-### 2. LiveKit服务器连接
-- 当前使用模拟token
-- 需要配置真实的LiveKit服务器
-- 需要验证WebRTC连接
+### 2. LiveKit Server Connection
+- Currently using mock token
+- Need to configure real LiveKit server
+- Need to verify WebRTC connection
 
-### 3. 权限配置
-- 需要确保Android应用有录音权限
-- 需要网络权限
+### 3. Permission Configuration
+- Need to ensure Android app has audio recording permission
+- Need network permission
 
-## 📱 测试流程
+## 📱 Testing Process
 
-### 当前可测试的功能
-1. **管理员端**：http://localhost:5173/care.html
-   - 发起呼叫功能正常
-   - LiveKit面板正常显示
+### Currently Testable Features
+1. **Admin End**: http://localhost:5173/care.html
+   - Call initiation works normally
+   - LiveKit panel displays normally
 
-2. **后端API**：所有API端点正常工作
-   - 呼叫管理功能完整
-   - LiveKit token生成正常
+2. **Backend API**: All API endpoints work normally
+   - Call management functions complete
+   - LiveKit token generation works normally
 
-3. **Android端**：需要Java环境配置后测试
-   - 基础呼叫检测功能已实现
-   - LiveKit连接代码已准备就绪
+3. **Android End**: Needs Java environment configuration before testing
+   - Basic call detection functionality implemented
+   - LiveKit connection code ready
 
-## 🎯 下一步计划
+## 🎯 Next Steps
 
-### 1. 配置Java环境
+### 1. Configure Java Environment
 ```bash
-# 在Android Studio中配置Java环境
-# 或者设置JAVA_HOME环境变量
+# Configure Java environment in Android Studio
+# Or set JAVA_HOME environment variable
 export JAVA_HOME=/path/to/java
 ```
 
-### 2. 测试Android应用构建
+### 2. Test Android App Build
 ```bash
 cd /workspaces/dora/333
 ./gradlew assembleDebug
 ```
 
-### 3. 配置LiveKit服务器
-- 使用真实的LiveKit服务器URL
-- 配置正确的token生成逻辑
+### 3. Configure LiveKit Server
+- Use real LiveKit server URL
+- Configure correct token generation logic
 
-### 4. 测试完整流程
-1. 管理员发起呼叫
-2. Android端接收并接听
-3. 建立LiveKit语音连接
-4. 验证双向语音通话
+### 4. Test Complete Flow
+1. Admin initiates call
+2. Android end receives and answers
+3. Establish LiveKit audio connection
+4. Verify bidirectional audio call
 
-## 🔍 技术细节
+## 🔍 Technical Details
 
 ### LiveKit Android SDK 2.9.0 API
-- 使用 `LiveKit.create(context)` 初始化
-- 使用 `room.connect(url, token)` 连接
-- 使用 `Room.Listener` 监听事件
-- 使用 `room.localParticipant.setMicrophoneEnabled(true)` 启用麦克风
+- Use `LiveKit.create(context)` to initialize
+- Use `room.connect(url, token)` to connect
+- Use `Room.Listener` to listen to events
+- Use `room.localParticipant.setMicrophoneEnabled(true)` to enable microphone
 
-### 权限要求
+### Permission Requirements
 ```xml
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 <uses-permission android:name="android.permission.CAMERA"/>
 <uses-permission android:name="android.permission.INTERNET"/>
 ```
 
-## 📊 完成度评估
+## 📊 Completion Assessment
 
-- **后端API**: 100% ✅
-- **管理员端前端**: 100% ✅  
-- **Android端基础功能**: 90% ✅
-- **LiveKit语音连接**: 80% ✅ (代码已实现，需要测试)
-- **整体集成测试**: 70% ✅
+- **Backend API**: 100% ✅
+- **Admin Frontend**: 100% ✅  
+- **Android End Basic Functions**: 90% ✅
+- **LiveKit Audio Connection**: 80% ✅ (code implemented, needs testing)
+- **Overall Integration Testing**: 70% ✅
 
-## 🎉 总结
+## 🎉 Summary
 
-管理员呼叫老人的功能已经基本完成，包括：
-- 完整的后端API
-- 管理员端界面
-- Android端基础功能
-- LiveKit集成代码
+Admin call elder functionality is basically complete, including:
+- Complete backend API
+- Admin interface
+- Android end basic functions
+- LiveKit integration code
 
-主要需要解决的是Java环境配置和LiveKit服务器连接测试。一旦这些配置完成，就可以进行完整的端到端测试。
+Main issues to resolve are Java environment configuration and LiveKit server connection testing. Once these configurations are complete, full end-to-end testing can proceed.

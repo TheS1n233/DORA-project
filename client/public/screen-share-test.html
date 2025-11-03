@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DORA Caregiver - Screen Share Test</title>
+    <style>
+      body { 
+        margin: 0; 
+        background: #101010; 
+        color: #eee; 
+        font-family: sans-serif; 
+        padding: 20px;
+      }
+      .row { 
+        display: flex; 
+        gap: 12px; 
+        padding: 12px; 
+        margin-bottom: 20px;
+      }
+      video { 
+        background: #000; 
+        width: 48%; 
+        aspect-ratio: 16/9; 
+        border: 2px solid #333;
+      }
+      button { 
+        padding: 8px 12px; 
+        margin: 4px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      button:disabled {
+        background: #666;
+        cursor: not-allowed;
+      }
+      .status {
+        background: #333;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .log {
+        background: #222;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DORA Caregiver - Screen Share Test</h1>
+    
+    <div class="row">
+      <button id="join">Join Room</button>
+      <button id="startCam">Start Camera</button>
+      <button id="startScreen">Start Screen Share</button>
+      <button id="stopScreen">Stop Screen Share</button>
+    </div>
+    
+    <div class="status" id="status">Not connected</div>
+    
+    <div class="row">
+      <video id="localCam" autoplay playsinline muted></video>
+      <video id="localScreen" autoplay playsinline muted></video>
+    </div>
+    
+    <div class="log" id="log"></div>
+
+    <script type="module">
+      import { Room, RoomEvent, createLocalTracks, Track } from "https://unpkg.com/livekit-client@2.9.0/dist/livekit-client.esm.js";
+
+      // TODO: 替换为你的LiveKit服务器地址和token
+      const serverUrl = "wss://127.0.0.1:7880";
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAxMjM0MDAsImlzcyI6IkFQSV9LRVkiLCJuYmYiOjE3MzAxMTk4MDAsInN1YiI6ImNhcmUtMSIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZSwicm9vbSI6ImRlbW8iLCJyb29tSm9pbiI6dHJ1ZX19.placeholder";
+
+      const room = new Room({
+        adaptiveStream: { pixelDensity: "screen" },
+        dynacast: true,
+      });
+
+      const $ = (id) => document.getElementById(id);
+      const log = (msg) => {
+        const logEl = $("log");
+        logEl.innerHTML += new Date().toLocaleTimeString() + ": " + msg + "\n";
+        logEl.scrollTop = logEl.scrollHeight;
+        console.log(msg);
+      };
+
+      const updateStatus = (msg) => {
+        $("status").textContent = msg;
+        log("Status: " + msg);
+      };
+
+      const localCamEl = $("localCam");
+      const localScreenEl = $("localScreen");
+
+      $("join").onclick = async () => {
+        try {
+          updateStatus("Connecting...");
+          await room.connect(serverUrl, token);
+          updateStatus("Connected to room: " + room.name);
+          log("Connected participants: " + room.remoteParticipants.size);
+        } catch (error) {
+          updateStatus("Connection failed: " + error.message);
+          log("Connection error: " + error);
+        }
+      };
+
+      $("startCam").onclick = async () => {
+        try {
+          updateStatus("Starting camera...");
+          const camTracks = await createLocalTracks({ audio: true, video: true });
+          for (const t of camTracks) {
+            await room.localParticipant.publishTrack(t, { source: Track.Source.Camera });
+            if (t.kind === "video") {
+              // 本地预览
+              const ms = new MediaStream([t.mediaStreamTrack]);
+              localCamEl.srcObject = ms;
+              log("Camera track published: " + t.source);
+            }
+          }
+          updateStatus("Camera started");
+        } catch (error) {
+          updateStatus("Camera failed: " + error.message);
+          log("Camera error: " + error);
+        }
+      };
+
+      $("startScreen").onclick = async () => {
+        try {
+          updateStatus("Starting screen share...");
+          const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+          const [scrVideo] = stream.getVideoTracks();
+          
+          await room.localParticipant.publishTrack(scrVideo, {
+            source: Track.Source.ScreenShare,
+            name: "admin-screen",
+          });
+          
+          // 本地预览
+          localScreenEl.srcObject = new MediaStream([scrVideo]);
+          log("Screen share track published: " + scrVideo.source);
+          updateStatus("Screen share started");
+        } catch (error) {
+          updateStatus("Screen share failed: " + error.message);
+          log("Screen share error: " + error);
+        }
+      };
+
+      $("stopScreen").onclick = async () => {
+        try {
+          for (const pub of room.localParticipant.videoTracks.values()) {
+            if (pub.source === Track.Source.ScreenShare) {
+              room.localParticipant.unpublishTrack(pub.track, true);
+              log("Screen share track unpublished");
+            }
+          }
+          localScreenEl.srcObject = null;
+          updateStatus("Screen share stopped");
+        } catch (error) {
+          updateStatus("Stop screen share failed: " + error.message);
+          log("Stop screen share error: " + error);
+        }
+      };
+
+      // 监听轨道订阅
+      room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+        log(`Track subscribed: ${track.kind} source: ${pub.source} from: ${participant.identity}`);
+        if (pub.source === Track.Source.ScreenShare) {
+          log("🖥️ Screen share track subscribed from: " + participant.identity);
+        }
+      });
+
+      room.on(RoomEvent.TrackUnsubscribed, (track, pub, participant) => {
+        log(`Track unsubscribed: ${track.kind} source: ${pub.source} from: ${participant.identity}`);
+      });
+
+      // 调试：显示发布的轨道
+      setInterval(() => {
+        const tracks = [...room.localParticipant.videoTracks.values()].map(p => ({
+          name: p.name, 
+          source: p.source, 
+          kind: p.kind, 
+          trackReady: !!p.track, 
+          enabled: !p.isMuted
+        }));
+        if (tracks.length > 0) {
+          log("Published tracks: " + JSON.stringify(tracks));
+        }
+      }, 5000);
+    </script>
+  </body>
+</html>

@@ -34,7 +34,7 @@ services:
       context: ../../health_monitoring_service
       dockerfile: Dockerfile
     ports:
-      - "8088:8080"
+      - "8089:8080"
     env_file:
       - ../../health_monitoring.env
     depends_on:

@@ -36,13 +36,13 @@ app.get("/tele/livekit/token", async (req, res) => {
 
     const { room = 'demo', identity = 'guest', role = 'participant' } = req.query;
 
-    // 使用LiveKit SDK生成真实的JWT token
+    // Use LiveKit SDK to generate real JWT token
     const token = new AccessToken(key, secret, {
       identity: identity,
       ttl: 3600, // 1 hour
     });
 
-    // 添加房间权限
+    // Add room permissions
     token.addGrant({
       room: room,
       roomJoin: true,
@@ -171,30 +171,41 @@ app.get("/api/calls/admin/calls", (req, res) => {
   res.json(admin_calls);
 });
 
+// Get elder-initiated calls (for admin dashboard)
+app.get("/api/calls/admin/elder-calls", (req, res) => {
+  const limit = parseInt(req.query.limit) || 50;
+  const elder_calls = Object.values(CALLS)
+    .filter(call => call.is_elder_initiated)
+    .sort((a, b) => b.created_at - a.created_at)
+    .slice(0, limit);
+  
+  res.json(elder_calls);
+});
+
 // Get call status by room_id
 app.get("/api/calls/status/:room_id", (req, res) => {
   const { room_id } = req.params;
   
-  console.log(`[STATUS] 检查通话状态: ${room_id}`);
-  console.log(`[STATUS] 当前通话记录:`, Object.keys(CALLS));
+  console.log(`[STATUS] Checking call status: ${room_id}`);
+  console.log(`[STATUS] Current call records:`, Object.keys(CALLS));
   
   if (!CALLS[room_id]) {
-    console.log(`[STATUS] 通话记录不存在: ${room_id}`);
+    console.log(`[STATUS] Call record not found: ${room_id}`);
     return res.status(404).json({ error: "room not found" });
   }
   
   const call = CALLS[room_id];
-  console.log(`[STATUS] 找到通话记录:`, call);
+  console.log(`[STATUS] Found call record:`, call);
   
-  // 如果通话已结束超过10分钟，清理记录
+  // If call ended more than 10 minutes ago, clean up record
   const now = Date.now();
-  if (call.ended_at && (now - call.ended_at) > 600000) { // 10分钟
-    console.log(`[STATUS] 通话已结束超过10分钟，清理记录: ${room_id}`);
+  if (call.ended_at && (now - call.ended_at) > 600000) { // 10 minutes
+    console.log(`[STATUS] Call ended more than 10 minutes ago, cleaning up: ${room_id}`);
     delete CALLS[room_id];
     return res.status(404).json({ error: "room not found" });
   }
   
-  console.log(`[STATUS] 返回通话状态:`, {
+  console.log(`[STATUS] Returning call status:`, {
     room_id: call.room_id,
     status: call.status,
     caller_id: call.caller_id,
@@ -225,11 +236,11 @@ app.get("/api/calls/elder/pending-calls/:elder_id", (req, res) => {
       call.is_admin_initiated
     );
   
-  // 清理过期的呼叫（超过5分钟未接听的）
+  // Clean up expired calls (not answered for more than 5 minutes)
   const now = Date.now();
   Object.keys(CALLS).forEach(roomId => {
     const call = CALLS[roomId];
-    if (call.status === "ringing" && (now - call.created_at) > 300000) { // 5分钟
+    if (call.status === "ringing" && (now - call.created_at) > 300000) { // 5 minutes
       call.status = "timeout";
       call.ended_at = now;
       LOGS.push({
@@ -253,7 +264,77 @@ app.get("/api/calls/logs", (req, res) => {
   res.json(logs);
 });
 
-// Cancel call endpoint (管理员取消呼叫)
+// === NEW: Elder call admin functionality ===
+
+// Elder initiate call to admin
+app.post("/api/calls/elder/initiate", (req, res) => {
+  const { elder_id, room_id, message = "Elder needs assistance" } = req.body;
+  
+  if (!elder_id || !room_id) {
+    return res.status(400).json({ error: "elder_id and room_id are required" });
+  }
+  
+  const now = Date.now();
+  
+  const call_data = {
+    room_id,
+    caller_id: elder_id,
+    callee_id: "admin-001", // Default admin ID
+    call_type: "emergency",
+    message,
+    status: "waiting",
+    created_at: now,
+    answered_at: null,
+    ended_at: null,
+    is_elder_initiated: true,
+  };
+  
+  CALLS[room_id] = call_data;
+  LOGS.push({
+    event: "elder_call_admin",
+    room_id,
+    ts: now,
+    data: call_data
+  });
+  
+  console.log(`[ELDER_CALL] Elder ${elder_id} initiated call to admin: ${room_id}`);
+  
+  res.json({
+    room_id,
+    status: "waiting",
+    message
+  });
+});
+
+// Elder cancel call to admin
+app.post("/api/calls/elder/cancel", (req, res) => {
+  const { elder_id, room_id } = req.body;
+  
+  if (!CALLS[room_id]) {
+    return res.status(404).json({ error: "room not found" });
+  }
+  
+  const call = CALLS[room_id];
+  if (call.caller_id !== elder_id) {
+    return res.status(403).json({ error: "not authorized" });
+  }
+  
+  call.status = "cancelled";
+  call.ended_at = Date.now();
+  
+  LOGS.push({
+    event: "elder_cancel_call",
+    room_id,
+    elder_id,
+    ts: Date.now()
+  });
+  
+  console.log(`[ELDER_CALL] Elder ${elder_id} cancelled call: ${room_id}`);
+  
+  res.json({ status: "cancelled", room_id });
+});
+
+// Cancel call endpoint (Admin cancels call)
 app.post("/api/calls/cancel", (req, res) => {
   const { room_id, admin_id } = req.body;
   
@@ -273,7 +354,7 @@ app.post("/api/calls/cancel", (req, res) => {
   res.json({ status: "cancelled", room_id });
 });
 
-// End call endpoint (结束通话)
+// End call endpoint (End call)
 app.post("/api/calls/end", (req, res) => {
   const { room_id } = req.body;
   

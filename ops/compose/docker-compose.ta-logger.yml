@@ -1,0 +1,12 @@
+# ops/compose/docker-compose.ta-logger.yml
+version: "3.8"
+services:
+  ta_session_logger:
+    build:
+      context: ../../
+      dockerfile: ./services/ta-session-logger/Dockerfile
+    image: dora/ta-session-logger:1.0.0
+    container_name: dora-ta-session-logger
+    ports:
+      - "8088:8088"
+    restart: unless-stopped

@@ -10,10 +10,11 @@ import HealthDataMonitor from '../components/HealthDataMonitor.jsx';
 import { fetchDevices } from '../lib/services/devices.js';
 import LiveKitPanel from '../components/LiveKitPanel.jsx';
 // import WsSwitch from '../components/WsSwitch.jsx';
-import EventsTimeline from '../components/EventsTimeline.jsx';
 import AdminCallElder from '../components/AdminCallElder.jsx';
+import ElderCallAlert from '../components/ElderCallAlert.jsx';
 
 export default function CaregiverPage() {
+  const [selectedPerson, setSelectedPerson] = useState('ms-zhang');
   const userName = useMemo(() => {
     const u = getUser();
     return (u && (u.name || u.nickname || u.id)) || 'Caregiver';
@@ -22,6 +23,14 @@ export default function CaregiverPage() {
   // LiveKit panel state
   const [lkOpen, setLkOpen] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
+  
+  // Active rooms (examples)
+  const [activeRooms] = useState([
+    { id: 'room-001', name: 'Sarah Johnson - Consultation', participants: 2, status: 'active', startedAt: '10:30 AM' },
+    { id: 'room-002', name: 'Michael Chen - Health Check', participants: 1, status: 'waiting', startedAt: '11:15 AM' },
+    { id: 'room-003', name: 'Emily Brown - Emergency', participants: 3, status: 'active', startedAt: '09:45 AM' },
+    { id: 'room-004', name: 'David Wilson - Follow-up', participants: 1, status: 'active', startedAt: '11:00 AM' }
+  ]);
 
   // devices mock/load
   const [devices, setDevices] = useState([]);
@@ -33,12 +42,22 @@ export default function CaregiverPage() {
     setCurrentCall(callData);
     // open LiveKit panel immediately
     setLkOpen(true);
-    console.log('📞 管理员发起呼叫，LiveKit界面已打开');
+    console.log('📞 Admin initiated call, LiveKit panel opened');
   };
 
   const handleCallEnded = () => {
     setCurrentCall(null);
     setLkOpen(false);
+  };
+
+  const handleElderCallAnswered = (callData) => {
+    setCurrentCall(callData);
+    setLkOpen(true);
+    console.log('📞 Admin answered elder call, LiveKit panel opened');
+  };
+
+  const handleElderCallDeclined = (callData) => {
+    console.log('❌ Admin declined elder call:', callData.room_id);
   };
 
   return (
@@ -49,7 +68,7 @@ export default function CaregiverPage() {
 
       {/* Health Data Monitor Section */}
       <div className="mt-2">
-        <HealthDataMonitor />
+        <HealthDataMonitor onPersonChange={setSelectedPerson} />
       </div>
 
       {/* === Admin Call Elder Panel === */}
@@ -57,6 +76,7 @@ export default function CaregiverPage() {
         <AdminCallElder 
           onCallInitiated={handleCallInitiated}
           onCallEnded={handleCallEnded}
+          selectedPerson={selectedPerson}
         />
       </div>
 
@@ -107,16 +127,65 @@ export default function CaregiverPage() {
             <button className="btn" onClick={() => setLkOpen(false)}>Hang up</button>
           </div>
         </div>
+        
+        {/* Active Rooms List */}
+        <div className="space-y-2 mb-4">
+          {activeRooms.map((room) => (
+            <div 
+              key={room.id}
+              className={`rounded-md border-2 p-3 bg-white transition-all ${
+                room.status === 'active' 
+                  ? 'border-green-500 bg-green-50' 
+                  : room.status === 'waiting'
+                  ? 'border-yellow-500 bg-yellow-50'
+                  : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`w-3 h-3 rounded-full ${
+                      room.status === 'active' ? 'bg-green-500 animate-pulse' : 
+                      room.status === 'waiting' ? 'bg-yellow-500' : 
+                      'bg-gray-300'
+                    }`}></span>
+                    <span className="font-semibold text-gray-800">{room.name}</span>
+                    {room.status === 'active' && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Active</span>
+                    )}
+                    {room.status === 'waiting' && (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Waiting</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500 ml-5">
+                    {room.participants} participant{room.participants !== 1 ? 's' : ''}
+                    {room.startedAt && ` • Started: ${room.startedAt}`}
+                  </div>
+                </div>
+                {room.status === 'active' && (
+                  <button 
+                    className="btn btn-sm bg-blue-500 text-white px-3 py-1"
+                    onClick={() => {
+                      setCurrentCall({ room_id: room.id });
+                      setLkOpen(true);
+                    }}
+                  >
+                    Join
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        
         <div className="rounded-md border border-slate-200 p-4 bg-white">
-          <div className="text-sm opacity-70">Room: {currentCall?.room_id || 'demo'}</div>
+          <div className="text-sm opacity-70 mb-2">
+            Current Room: {currentCall?.room_id 
+              ? activeRooms.find(r => r.id === currentCall.room_id)?.name || currentCall.room_id
+              : activeRooms.find(r => r.status === 'active')?.name || 'No active room'}
+          </div>
           <FhirExportButton />
         </div>
-      </div>
-
-      {/* === New: Events timeline card === */}
-      <div className="card mt-6">
-        <h2 className="font-bold mb-2">Events (24h)</h2>
-        <EventsTimeline kinds="vitals,hazard,emergency" since="24h" limit={200} />
       </div>
 
       <LiveKitPanel
@@ -126,6 +195,12 @@ export default function CaregiverPage() {
         room={currentCall?.room_id || 'demo'}
         identity={userName}
         roomId={currentCall?.room_id}
+      />
+
+      {/* === Elder Call Alert === */}
+      <ElderCallAlert
+        onCallAnswered={handleElderCallAnswered}
+        onCallDeclined={handleElderCallDeclined}
       />
     </div>
   );

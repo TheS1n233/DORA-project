@@ -175,3 +175,83 @@ async def get_elder_pending_calls(elder_id: str):
             call.get("is_admin_initiated", False))
     ]
     return pending_calls
+
+# === NEW: Elder call admin functionality ===
+
+class ElderCallAdminBody(BaseModel):
+    elder_id: str = Field(..., description="Elder user ID")
+    room_id: str = Field(..., description="Room ID for the call")
+    message: Optional[str] = Field("Elder needs assistance", description="Message to display to admin")
+
+@router.post("/elder/initiate")
+async def elder_call_admin(body: ElderCallAdminBody):
+    """
+    Elder initiates a call to admin/caregiver.
+    This creates a call session and notifies the admin.
+    """
+    now = int(time.time())
+    
+    call_data = {
+        "room_id": body.room_id,
+        "caller_id": body.elder_id,
+        "callee_id": "admin-001",  # Default admin ID
+        "call_type": "emergency",
+        "message": body.message,
+        "status": "waiting",
+        "created_at": now,
+        "answered_at": None,
+        "ended_at": None,
+        "is_elder_initiated": True,
+    }
+    
+    CALLS[body.room_id] = call_data
+    LOGS.append({
+        "event": "elder_call_admin", 
+        "room_id": body.room_id, 
+        "ts": now, 
+        "data": call_data
+    })
+    
+    return {
+        "room_id": body.room_id,
+        "status": "waiting",
+        "message": body.message
+    }
+
+class ElderCancelCallBody(BaseModel):
+    elder_id: str = Field(..., description="Elder user ID")
+    room_id: str = Field(..., description="Room ID to cancel")
+
+@router.post("/elder/cancel")
+async def elder_cancel_call(body: ElderCancelCallBody):
+    """
+    Elder cancels a call to admin.
+    """
+    if body.room_id not in CALLS:
+        raise HTTPException(status_code=404, detail="room not found")
+    
+    call = CALLS[body.room_id]
+    if call.get("caller_id") != body.elder_id:
+        raise HTTPException(status_code=403, detail="not authorized")
+    
+    call["status"] = "cancelled"
+    call["ended_at"] = int(time.time())
+    
+    LOGS.append({
+        "event": "elder_cancel_call",
+        "room_id": body.room_id,
+        "elder_id": body.elder_id,
+        "ts": int(time.time())
+    })
+    
+    return {"status": "cancelled", "room_id": body.room_id}
+
+@router.get("/status/{room_id}")
+async def get_call_status(room_id: str):
+    """
+    Get current status of a call.
+    """
+    if room_id not in CALLS:
+        raise HTTPException(status_code=404, detail="room not found")
+    
+    return {"status": CALLS[room_id]["status"], "room_id": room_id}

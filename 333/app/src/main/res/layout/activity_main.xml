@@ -77,6 +77,153 @@
 
             <Space android:layout_width="match_parent" android:layout_height="20dp"/>
 
+            <!-- Emergency Call Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="24dp"
+                android:layout_marginBottom="24dp"
+                android:elevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🚨"
+                        android:textSize="32sp"
+                        android:layout_marginEnd="12dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Emergency Call"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dora_text"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <Button
+                        android:id="@+id/btnCallAdmin"
+                        android:layout_width="240dp"
+                        android:layout_height="100dp"
+                        android:text="📞 Call Caregiver"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_call_button"
+                        android:focusable="true"
+                        android:elevation="12dp"
+                        android:layout_marginEnd="20dp"
+                        android:shadowColor="#000000"
+                        android:shadowDx="0"
+                        android:shadowDy="4"
+                        android:shadowRadius="8"/>
+
+                    <Button
+                        android:id="@+id/btnCancelCall"
+                        android:layout_width="240dp"
+                        android:layout_height="100dp"
+                        android:text="❌ Cancel Call"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#FF6B6B"
+                        android:focusable="true"
+                        android:elevation="12dp"
+                        android:visibility="gone"
+                        android:shadowColor="#000000"
+                        android:shadowDx="0"
+                        android:shadowDy="4"
+                        android:shadowRadius="8"/>
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/emergencyCallStatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap the button to call your caregiver"
+                    android:textSize="16sp"
+                    android:textColor="@color/dora_muted"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"/>
+
+                <Button
+                    android:id="@+id/btnTestVoice"
+                    android:layout_width="200dp"
+                    android:layout_height="60dp"
+                    android:text="🎤 Test Voice"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:background="#4CAF50"
+                    android:focusable="true"
+                    android:elevation="8dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="20dp"/>
+
+                <TextView
+                    android:id="@+id/testVoiceResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="14sp"
+                    android:textColor="@color/dora_text"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:visibility="gone"/>
+
+                <TextView
+                    android:id="@+id/testVoiceAudioLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="12sp"
+                    android:textColor="@color/dora_muted"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:visibility="gone"/>
+
+                <ProgressBar
+                    android:id="@+id/testVoiceAudioProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="200dp"
+                    android:layout_height="4dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="4dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="#4CAF50"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+
+            <!-- Co-Watch media player area -->
+            <com.google.android.exoplayer2.ui.PlayerView
+                android:id="@+id/player_view"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="#000000"
+                android:visibility="gone" />
+
             <!-- Video call area -->
             <FrameLayout
                 android:id="@+id/videoCallContainer"
@@ -178,44 +325,6 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- Row 1: Home + Health + Calendar -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:orientation="horizontal">
-                
-                <Button
-                    android:id="@+id/btnStartCall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:focusable="true"
-                    android:padding="8dp"
-                    android:text="Start LiveKit Call" />
-                    
-                <Button
-                    android:id="@+id/btnEndCall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:focusable="true"
-                    android:padding="8dp"
-                    android:text="End Call"
-                    android:background="#FF6B6B"
-                    android:textColor="#FFFFFF"
-                    android:visibility="gone" />
-                    
-                <Button
-                    android:id="@+id/btnTestCall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:focusable="true"
-                    android:padding="8dp"
-                    android:text="Test Call Check"
-                    android:background="#4CAF50"
-                    android:textColor="#FFFFFF" />
-            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -231,64 +340,99 @@
                     android:background="@drawable/bg_card_selector"
                     android:focusable="true"
                     android:padding="16dp"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:elevation="4dp">
 
                     <TextView
                         style="@style/DoraTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Home status"/>
+                        android:text="🏠 Home Status"/>
 
-                    <Space android:layout_width="match_parent" android:layout_height="8dp"/>
-                    <!-- three tiles: temp/humidity/gas -->
+                    <Space android:layout_width="match_parent" android:layout_height="12dp"/>
+
+                    <!-- Security Status -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:weightSum="3"
-                        android:orientation="horizontal">
-                        <!-- temperature -->
-                        <LinearLayout
-                            android:id="@+id/tileTemp"
-                            android:layout_width="0dp"
-                            android:layout_height="88dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/bg_metric_chip"
-                            android:padding="12dp"
-                            android:orientation="horizontal">
-
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
                             <TextView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
-                                android:text="●"
-                                android:textSize="12sp"
-                                android:textColor="@color/dora_accent"
-                                android:contentDescription="@string/cd_temp"/>
-
+                            android:text="🔒"
+                            android:textSize="20sp"/>
                             <Space android:layout_width="8dp" android:layout_height="1dp"/>
-                            <LinearLayout
+                        <TextView
                                 android:layout_width="0dp"
-                                android:layout_height="match_parent"
+                            android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:orientation="vertical">
-
+                            android:text="Security: Active"
+                            android:textSize="16sp"
+                            android:textColor="@color/dora_text"/>
                                 <TextView
-                                    style="@style/MetricTitle"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Temperature"/>
-
+                            android:text="●"
+                            android:textSize="16sp"
+                            android:textColor="#4CAF50"/>
+                    </LinearLayout>
+                    
+                    <!-- Devices Online -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:text="📱"
+                            android:textSize="20sp"/>
+                        <Space android:layout_width="8dp" android:layout_height="1dp"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Devices: 8/10 Online"
+                            android:textSize="16sp"
+                            android:textColor="@color/dora_text"/>
                             </LinearLayout>
 
+                    <!-- Emergency Status -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:text="🚨"
+                            android:textSize="20sp"/>
+                        <Space android:layout_width="8dp" android:layout_height="1dp"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Emergency: Ready"
+                            android:textSize="16sp"
+                            android:textColor="@color/dora_text"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="●"
+                            android:textSize="16sp"
+                            android:textColor="#4CAF50"/>
                         </LinearLayout>
-
-                    </LinearLayout>
-
 
                 </LinearLayout>
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
 
-                <!-- Health panel -->
+                <!-- Health Summary panel (no duplicate metrics) -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="220dp"
@@ -296,72 +440,120 @@
                     android:background="@drawable/bg_card_selector"
                     android:focusable="true"
                     android:padding="16dp"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:elevation="4dp">
 
                     <TextView
                         style="@style/DoraTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Person's  Health"/>
+                        android:text="💚 Health Summary"/>
 
-                    <Space android:layout_width="match_parent" android:layout_height="8dp"/>
+                    <Space android:layout_width="match_parent" android:layout_height="12dp"/>
 
+                    <!-- Overall Health Score -->
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:id="@+id/imgHuman"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_gravity="center_vertical"
-                            android:adjustViewBounds="true"
-                            android:scaleType="fitStart"
-                            android:src="@drawable/ren1" />
+                            android:text="Overall Score"
+                            android:textSize="16sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvHealthScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="72/100"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+
+                    <!-- Status Indicators -->
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="8dp">
 
                         <LinearLayout
-                            android:layout_width="100dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:id="@+id/metricHeart"
-                                style="@style/DoraScheduleItem"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:background="@color/dora_badge_orange"
-                                android:text="Glucose 12ml/dl"/>
-
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="6dp">
                             <TextView
-                                android:id="@+id/metricLungs"
-                                style="@style/DoraScheduleItem"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:background="@color/dora_badge_blue"
-                                android:text="Temperature 12℃"/>
-
+                                android:layout_width="8dp"
+                                android:layout_height="8dp"
+                                android:background="#FF6B6B"
+                                android:backgroundTint="#FF6B6B"
+                                android:layout_marginEnd="8dp"/>
                             <TextView
-                                android:id="@+id/metricStomach"
-                                style="@style/DoraScheduleItem"
-                                android:layout_width="match_parent"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:background="@color/dora_badge_pink"
-                                android:text="Oxygen Saturation 12%"/>
-
-                            <TextView
-                                android:id="@+id/metricLiver"
-                                style="@style/DoraScheduleItem"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:background="@color/dora_badge_blue"
-                                android:text="Sleep Quality 12h"/>
+                                android:layout_weight="1"
+                                android:text="Warning: 3 metrics"
+                                android:textSize="14sp"
+                                android:textColor="@color/dora_text"/>
                         </LinearLayout>
+                        
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="6dp">
+                            <TextView
+                                android:layout_width="8dp"
+                                android:layout_height="8dp"
+                                android:background="#E53935"
+                                android:backgroundTint="#E53935"
+                                android:layout_marginEnd="8dp"/>
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Critical: 1 metric"
+                                android:textSize="14sp"
+                                android:textColor="@color/dora_text"/>
+                        </LinearLayout>
+                        
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <TextView
+                                android:layout_width="8dp"
+                                android:layout_height="8dp"
+                                android:background="#4CAF50"
+                                android:backgroundTint="#4CAF50"
+                                android:layout_marginEnd="8dp"/>
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Normal: 4 metrics"
+                                android:textSize="14sp"
+                                android:textColor="@color/dora_text"/>
                     </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Last Update Time -->
+                    <Space android:layout_width="match_parent" android:layout_height="8dp"/>
+                    <TextView
+                        android:id="@+id/tvHealthLastUpdate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Updated: Just now"
+                        android:textSize="12sp"
+                        android:textColor="@color/dora_muted"/>
                 </LinearLayout>
 
                 <Space android:layout_width="16dp" android:layout_height="1dp"/>
@@ -419,101 +611,504 @@
 
             <Space android:layout_width="match_parent" android:layout_height="16dp"/>
 
-            <!-- Row 2: Blood pressure + Activity + Heart rate -->
+            <!-- Health Dashboard Section: 健康监测数据 (8项) -->
+            <LinearLayout
+                android:id="@+id/cardHealthMetrics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_selector"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
+                android:focusable="true"
+                android:elevation="2dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🏥 Health Monitoring"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dora_text"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="8 metrics"
+                        android:textSize="14sp"
+                        android:textColor="@color/dora_muted"
+                        android:background="@drawable/bg_metric_chip"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"/>
+                </LinearLayout>
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    
+                    <!-- Body Temperature -->
+                    <LinearLayout
+                        android:id="@+id/llBodyTemperature"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Body Temperature"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvBodyTemperature"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="36.8°C"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Heart Rate -->
+                    <LinearLayout
+                        android:id="@+id/llHeartRate"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Heart Rate"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvHeartRate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="75 bpm"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                </LinearLayout>
+                
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <!-- Blood pressure (placeholder) -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="160dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_card_selector"
-                    android:focusable="true"
-                    android:padding="12dp"
-                    android:orientation="vertical">
-                    <TextView
-                        style="@style/DoraTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Blood pressure"/>
-                    <Space android:layout_width="match_parent" android:layout_height="8dp"/>
-                    <TextView
-                        android:id="@+id/bpChart"
-                        style="@style/DoraMuted"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:text="(chart)"/>
-                </LinearLayout>
-
-                <Space android:layout_width="16dp" android:layout_height="1dp"/>
-
-                <!-- Activity (placeholder) -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="160dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_card_selector"
-                    android:focusable="true"
-                    android:padding="12dp"
-                    android:orientation="vertical">
-                    <TextView
-                        style="@style/DoraTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Your activity"/>
-                    <Space android:layout_width="match_parent" android:layout_height="8dp"/>
+                    <!-- SpO2 -->
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:id="@+id/llSpO2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:gravity="bottom"
-                        android:orientation="horizontal">
-                        <View android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="70dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="85dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="45dp" android:layout_weight="1" android:background="@color/dora_accent"/>
-                        <Space android:layout_width="4dp" android:layout_height="1dp"/>
-                        <View android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:background="@color/dora_accent"/>
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SpO2"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvSpO2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="98%"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Glucose -->
+                <LinearLayout
+                        android:id="@+id/llGlucose"
+                    android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                            android:text="Glucose"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                    <TextView
+                            android:id="@+id/tvGlucose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5.5 mmol/L"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                </LinearLayout>
+                
+                <LinearLayout
+                        android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    
+                    <!-- HRV -->
+                    <LinearLayout
+                        android:id="@+id/llHRV"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HRV"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvHRV"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="50 ms"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- EDA -->
+                    <LinearLayout
+                        android:id="@+id/llEDA"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="EDA"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvEDA"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.5 µS"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <Space android:layout_width="16dp" android:layout_height="1dp"/>
-
-                <!-- Heart rate -->
                 <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Sleep Score -->
+                    <LinearLayout
+                        android:id="@+id/llSleepScore"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sleep Score"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvSleepScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="85/100"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Steps Today -->
+                <LinearLayout
+                        android:id="@+id/llStepsToday"
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                        android:layout_height="wrap_content"
                     android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Steps Today"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvStepsToday"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5000 steps"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                </LinearLayout>
+                
+            </LinearLayout>
+            </LinearLayout>
+
+            <!-- 血压数据 (3项) -->
+            <LinearLayout
+                android:id="@+id/cardBloodPressure"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
                     android:background="@drawable/bg_card_selector"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
                     android:focusable="true"
-                    android:padding="12dp"
-                    android:orientation="vertical">
+                android:elevation="2dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
                     <TextView
-                        style="@style/DoraTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Heart rate"/>
-                    <Space android:layout_width="match_parent" android:layout_height="12dp"/>
-                    <TextView
-                        android:id="@+id/heartRate"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="102 bpm"
-                        android:textSize="28sp"
+                        android:layout_weight="1"
+                        android:text="💓 Blood Pressure"
+                        android:textSize="22sp"
                         android:textStyle="bold"
-                        android:textColor="@color/dora_accent"/>
+                        android:textColor="@color/dora_text"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3 metrics"
+                        android:textSize="14sp"
+                        android:textColor="@color/dora_muted"
+                        android:background="@drawable/bg_metric_chip"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"/>
+                </LinearLayout>
+                
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    
+                    <!-- Systolic -->
+                    <LinearLayout
+                        android:id="@+id/llSystolic"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Systolic"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvSystolic"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="120 mmHg"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Diastolic -->
+                    <LinearLayout
+                        android:id="@+id/llDiastolic"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Diastolic"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvDiastolic"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="80 mmHg"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Pulse -->
+                    <LinearLayout
+                        android:id="@+id/llPulse"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pulse"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvPulse"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="72 bpm"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    </LinearLayout>
+                </LinearLayout>
+
+            <!-- 环境监测数据 (3项) -->
+            <LinearLayout
+                android:id="@+id/cardEnvironmental"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_selector"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
+                android:focusable="true"
+                android:elevation="2dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🌡️ Environmental Monitoring"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dora_text"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3 metrics"
+                        android:textSize="14sp"
+                        android:textColor="@color/dora_muted"
+                        android:background="@drawable/bg_metric_chip"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"/>
+                </LinearLayout>
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    
+                    <!-- Indoor Temperature -->
+                    <LinearLayout
+                        android:id="@+id/llIndoorTemperature"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Indoor Temperature"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvIndoorTemperature"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="25°C"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Indoor Humidity -->
+                    <LinearLayout
+                        android:id="@+id/llIndoorHumidity"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Indoor Humidity"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                        <TextView
+                            android:id="@+id/tvIndoorHumidity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="60%"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
+                    <!-- Gas Concentration -->
+                <LinearLayout
+                        android:id="@+id/llGasConcentration"
+                    android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                            android:text="Gas Concentration"
+                            android:textSize="14sp"
+                            android:textColor="@color/dora_muted"/>
+                    <TextView
+                            android:id="@+id/tvGasConcentration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                            android:text="0 ppm"
+                            android:textSize="18sp"
+                        android:textStyle="bold"
+                            android:textColor="@color/dora_text"/>
+                    </LinearLayout>
+                    
                 </LinearLayout>
             </LinearLayout>
 

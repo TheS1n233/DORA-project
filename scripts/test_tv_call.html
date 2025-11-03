@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TV端呼叫测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .info { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>TV端呼叫测试</h1>
+    <div id="status">状态：未开始</div>
+    <div id="logs"></div>
+    
+    <button onclick="startPolling()">开始轮询</button>
+    <button onclick="stopPolling()">停止轮询</button>
+    <button onclick="testCall()">测试呼叫</button>
+    
+    <script>
+        let polling = false;
+        let interval = null;
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        async function pollPendingCalls() {
+            if (!polling) return;
+            
+            try {
+                log('正在轮询呼叫数据...', 'info');
+                const response = await fetch('http://localhost:8300/api/calls/elder/pending-calls/elder-001');
+                
+                if (!response.ok) {
+                    log(`轮询失败: ${response.status} ${response.statusText}`, 'error');
+                    return;
+                }
+                
+                const calls = await response.json();
+                log(`收到 ${calls.length} 个呼叫`, 'info');
+                
+                if (calls && calls.length > 0) {
+                    const call = calls[0];
+                    log(`最新呼叫: ${call.message} (状态: ${call.status})`, 'success');
+                    
+                    if (call.status === 'ringing') {
+                        log('🔔 发现新的呼叫！', 'success');
+                    }
+                } else {
+                    log('没有待处理的呼叫', 'info');
+                }
+            } catch (error) {
+                log(`轮询错误: ${error.message}`, 'error');
+            }
+        }
+        
+        function startPolling() {
+            if (polling) return;
+            
+            polling = true;
+            document.getElementById('status').textContent = '状态：正在轮询';
+            log('开始轮询呼叫数据...', 'success');
+            
+            // 立即轮询一次
+            pollPendingCalls();
+            
+            // 每2秒轮询一次
+            interval = setInterval(pollPendingCalls, 2000);
+        }
+        
+        function stopPolling() {
+            if (!polling) return;
+            
+            polling = false;
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+            document.getElementById('status').textContent = '状态：已停止';
+            log('停止轮询', 'info');
+        }
+        
+        async function testCall() {
+            try {
+                log('正在发起测试呼叫...', 'info');
+                const response = await fetch('http://localhost:8300/api/calls/admin/call-elder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        admin_id: 'admin-001',
+                        elder_id: 'elder-001',
+                        call_type: 'regular',
+                        message: '测试呼叫 - 张奶奶您好！'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`呼叫已发起: ${result.room_id}`, 'success');
+                } else {
+                    log(`呼叫失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`呼叫错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载后自动开始轮询
+        window.onload = function() {
+            log('页面已加载，准备开始轮询...', 'info');
+            setTimeout(startPolling, 1000);
+        };
+    </script>
+</body>
+</html>

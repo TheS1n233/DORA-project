@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LiveKit Browser Test</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #111; color: #eee; font-family: system-ui, Arial; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+      input, button { padding: 8px 10px; border-radius: 6px; border: 0; }
+      input { min-width: 360px; }
+      button { cursor: pointer; }
+      .btn { background: #333; color: #fff; }
+      .btn-primary { background: #2a6ef2; }
+      .btn-green { background: #1e9e57; }
+      .btn-orange { background: #ef8f00; }
+      video { width: 48%; aspect-ratio: 16/9; background: #000; border-radius: 8px; }
+      .log { background: #1b1b1b; border-radius: 8px; padding: 10px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 280px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h2>🔧 LiveKit Browser Test</h2>
+
+    <div class="row">
+      <input id="server" placeholder="wss://YOUR-LIVEKIT:7880" />
+      <input id="token" placeholder="PASTE YOUR ACCESS TOKEN" />
+    </div>
+
+    <div class="row">
+      <button class="btn btn-primary" id="connect">1) Connect</button>
+      <button class="btn btn-green" id="cam">2) Enable Camera</button>
+      <button class="btn btn-orange" id="screen">3) Start Screen Share</button>
+    </div>
+
+    <div class="row">
+      <video id="camPrev" autoplay playsinline muted></video>
+      <video id="screenPrev" autoplay playsinline muted></video>
+    </div>
+
+    <pre class="log" id="log"></pre>
+
+    <script type="module">
+      import { Room, RoomEvent, createLocalTracks, Track } from 'https://unpkg.com/livekit-client@2.9.0/dist/livekit-client.esm.js';
+
+      const $ = (id) => document.getElementById(id);
+      const log = (m) => { $('log').textContent += m + '\n'; $('log').scrollTop = $('log').scrollHeight; console.log(m); };
+
+      const room = new Room({ adaptiveStream: { pixelDensity: 'screen' }, dynacast: true });
+
+      $('connect').onclick = async () => {
+        try {
+          await room.connect($('server').value.trim(), $('token').value.trim());
+          log('✅ connected: ' + room.name + ' as ' + room.localParticipant.identity);
+        } catch (e) {
+          log('❌ connect failed: ' + e.message);
+        }
+      };
+
+      $('cam').onclick = async () => {
+        try {
+          await room.localParticipant.setCameraEnabled(true);
+          await room.localParticipant.setMicrophoneEnabled(true);
+          const tracks = await createLocalTracks({ video: true, audio: false });
+          const v = tracks.find(t => t.kind === 'video');
+          if (v) $('camPrev').srcObject = new MediaStream([v.mediaStreamTrack]);
+          log('📹 camera published: ' + [...room.localParticipant.videoTracks.values()].map(p => p.source).join(','));
+        } catch (e) {
+          log('❌ camera error: ' + e.message);
+        }
+      };
+
+      $('screen').onclick = async () => {
+        try {
+          // Preferred helper
+          try {
+            await room.localParticipant.setScreenShareEnabled(true, { audio: true });
+            log('🖥️ screenshare via helper enabled');
+          } catch (e) {
+            // Fallback manual publish with proper source
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            const [videoTrack] = stream.getVideoTracks();
+            await room.localParticipant.publishTrack(videoTrack, { source: Track.Source.ScreenShare, name: 'screen-share' });
+            $('screenPrev').srcObject = new MediaStream([videoTrack]);
+            log('🖥️ screenshare published manually');
+          }
+
+          const pubs = [...room.localParticipant.videoTracks.values()].map(p => ({ source: p.source, enabled: p.isEnabled }));
+          log('📊 local video pubs: ' + JSON.stringify(pubs));
+        } catch (e) {
+          log('❌ screenshare error: ' + e.message);
+        }
+      };
+
+      room.on(RoomEvent.TrackSubscribed, (track, pub, p) => {
+        log(`📥 subscribed: ${track.kind} source=${pub.source} from=${p.identity}`);
+      });
+      room.on(RoomEvent.TrackPublished, (pub, p) => log(`📤 published: ${pub.kind} source=${pub.source} by=${p.identity}`));
+    </script>
+  </body>
+</html>
+
+

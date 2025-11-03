@@ -35,7 +35,8 @@ android {
 }
 
 dependencies {
-    implementation("io.livekit:livekit-android:2.9.0")
+    // LiveKit Android SDK from Maven Central
+    implementation("io.livekit:livekit-android:2.21.0")
     implementation(libs.androidx.core.ktx)
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
@@ -47,4 +48,11 @@ dependencies {
     // 协程支持
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    
+    // ExoPlayer for Co-Watch media playback
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
+    implementation("com.google.android.exoplayer:exoplayer-ui:2.19.1")
+    
+    // Vosk offline speech recognition from Maven Central
+    implementation("com.alphacephei:vosk-android:0.3.70")
 }

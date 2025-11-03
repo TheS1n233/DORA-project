@@ -1,36 +1,74 @@
 import React, { useState, useEffect } from 'react';
 
-export default function HealthDataMonitor() {
+export default function HealthDataMonitor({ onPersonChange }) {
+  const [selectedPerson, setSelectedPerson] = useState('ms-zhang'); // Default to MS.Zhang
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
 
-  // Entity mapping
-  const HEALTH_ENTITIES = {
-    // health
-    bodyTemperature: 'input_number.dora_body_temperature_c',
-    eda: 'input_number.dora_eda_usiemens',
-    glucose: 'input_number.dora_glucose_mgdl',
-    heartRate: 'input_number.dora_heart_rate_bpm',
-    hrv: 'input_number.dora_hrv_rmssd_ms',
-    spo2: 'input_number.dora_spo2_percent',
-    sleepScore: 'input_number.dora_sleep_score',
-    steps: 'input_number.dora_steps_today',
-    
-    // environment
-    indoorTemp: 'input_number.dora_indoor_temp_c',
-    indoorHumidity: 'input_number.dora_indoor_humidity_percent',
-    gasConcentration: 'input_number.dora_gas_ppm',
-    
-    // blood pressure
-    systolic: 'input_number.bp_systolic',
-    diastolic: 'input_number.bp_diastolic',
-    pulse: 'input_number.pulse'
+  // Hardcoded person data (not from HA)
+  const personData = {
+    'ms-zhang': {
+      name: 'MS.Zhang',
+      data: {
+        bodyTemperature: { state: '38.2' },
+        heartRate: { state: '105.0' },
+        spo2: { state: '91.0' },
+        glucose: { state: '6.5' },
+        hrv: { state: '50.0' },
+        eda: { state: '0.8' },
+        sleepScore: { state: '70.0' },
+        steps: { state: '2500.0' },
+        systolic: { state: '145.0' },
+        diastolic: { state: '95.0' },
+        pulse: { state: '80.0' },
+        indoorTemp: { state: '28.0' },
+        indoorHumidity: { state: '75.0' },
+        gasConcentration: { state: '100.0' }
+      }
+    },
+    'mrs-ma': {
+      name: 'MRS.Ma',
+      data: {
+        bodyTemperature: { state: '36.8' },
+        heartRate: { state: '72.0' },
+        spo2: { state: '98.0' },
+        glucose: { state: '5.2' },
+        hrv: { state: '65.0' },
+        eda: { state: '0.5' },
+        sleepScore: { state: '85.0' },
+        steps: { state: '4500.0' },
+        systolic: { state: '125.0' },
+        diastolic: { state: '82.0' },
+        pulse: { state: '75.0' },
+        indoorTemp: { state: '23.0' },
+        indoorHumidity: { state: '55.0' },
+        gasConcentration: { state: '25.0' }
+      }
+    },
+    'mr-li': {
+      name: 'MR.Li',
+      data: {
+        bodyTemperature: { state: '37.1' },
+        heartRate: { state: '88.0' },
+        spo2: { state: '96.0' },
+        glucose: { state: '5.8' },
+        hrv: { state: '55.0' },
+        eda: { state: '0.7' },
+        sleepScore: { state: '78.0' },
+        steps: { state: '3200.0' },
+        systolic: { state: '135.0' },
+        diastolic: { state: '88.0' },
+        pulse: { state: '78.0' },
+        indoorTemp: { state: '24.5' },
+        indoorHumidity: { state: '60.0' },
+        gasConcentration: { state: '45.0' }
+      }
+    }
   };
 
-  // fetch all health data
-  const fetchHealthData = async () => {
+  // Fetch data from HA (for MS.Zhang only)
+  const fetchHealthDataFromHA = async () => {
     setLoading(true);
     setError(null);
 
@@ -41,73 +79,45 @@ export default function HealthDataMonitor() {
       }
 
       const result = await response.json();
-      console.log('✅ Fetched health data:', result);
+      console.log('✅ Fetched health data from HA:', result);
       setHealthData(result);
     } catch (err) {
-      console.error('❌ Failed to fetch health data:', err);
+      console.error('❌ Failed to fetch health data from HA:', err);
       setError(err.message || String(err));
     } finally {
       setLoading(false);
     }
   };
 
-  // simulate
-  const simulateHealthData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const simulatedData = {
-        bodyTemperature: (30 + Math.random() * 15).toFixed(1),
-        eda: (Math.random() * 20).toFixed(1),
-        glucose: Math.floor(Math.random() * 100) + 40,
-        heartRate: Math.floor(Math.random() * 40) + 60,
-        hrv: Math.floor(Math.random() * 100) + 10,
-        spo2: Math.floor(Math.random() * 10) + 90,
-        sleepScore: Math.floor(Math.random() * 30) + 60,
-        steps: Math.floor(Math.random() * 5000),
-        indoorTemp: (15 + Math.random() * 25).toFixed(1),
-        indoorHumidity: Math.floor(Math.random() * 100),
-        gasConcentration: Math.floor(Math.random() * 500),
-        systolic: Math.floor(Math.random() * 60) + 120,
-        diastolic: Math.floor(Math.random() * 30) + 80,
-        pulse: Math.floor(Math.random() * 20) + 70
-      };
-
-      const response = await fetch('/v1/vitals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: 'admin-simulator',
-          user_id: 'user-001',
-          metric: 'comprehensive_health',
-          ...simulatedData,
-          unit: 'mixed'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Simulated health data sent:', result);
-      setTimeout(fetchHealthData, 1000);
-    } catch (err) {
-      setError(err.message);
-      console.error('❌ Failed to simulate health data:', err);
-    } finally {
-      setLoading(false);
+  // Load data for selected person
+  const loadPersonData = () => {
+    if (selectedPerson === 'ms-zhang') {
+      // MS.Zhang: fetch from HA
+      fetchHealthDataFromHA();
+    } else {
+      // Others: use hardcoded data
+      setLoading(true);
+      setTimeout(() => {
+        const person = personData[selectedPerson];
+        if (person) {
+          setHealthData({ data: person.data });
+        }
+        setLoading(false);
+      }, 100);
     }
   };
 
-  // auto refresh
+  // Notify parent when person changes
   useEffect(() => {
-    fetchHealthData();
-    let interval;
-    if (autoRefresh) interval = setInterval(fetchHealthData, 5000);
-    return () => { if (interval) clearInterval(interval); };
-  }, [autoRefresh]);
+    onPersonChange?.(selectedPerson);
+  }, [selectedPerson, onPersonChange]);
+
+  // Refresh when person changes
+  useEffect(() => {
+    loadPersonData();
+    const interval = setInterval(loadPersonData, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, [selectedPerson]);
 
   // classification labels
   const getDataClassification = (value, type) => {
@@ -185,31 +195,28 @@ export default function HealthDataMonitor() {
         <p className="text-gray-600">Real-time health and environment data</p>
       </div>
 
-      {/* Controls */}
-      <div className="mb-6 flex space-x-4">
-        <button
-          onClick={fetchHealthData}
-          disabled={loading}
-          className="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white"
-        >
-          {loading ? 'Loading...' : 'Refresh Data'}
-        </button>
-        <button
-          onClick={simulateHealthData}
-          disabled={loading}
-          className="btn btn-sm bg-green-500 hover:bg-green-600 text-white"
-        >
-          {loading ? 'Simulating...' : 'Simulate All Data'}
-        </button>
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={autoRefresh}
-            onChange={(e) => setAutoRefresh(e.target.checked)}
-            className="rounded"
-          />
-          <span className="text-sm text-gray-600">Auto Refresh (5s)</span>
+      {/* Person Selection Dropdown */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Person
         </label>
+        <select
+          value={selectedPerson}
+          onChange={(e) => setSelectedPerson(e.target.value)}
+          className="w-64 p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base bg-white shadow-sm"
+        >
+          <option value="ms-zhang">MS.Zhang</option>
+          <option value="mrs-ma">MRS.Ma</option>
+          <option value="mr-li">MR.Li</option>
+        </select>
+      </div>
+
+      {/* Refresh Indicator */}
+      <div className="mb-6">
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <span className="text-green-500">●</span>
+          <span>Refresh (5s) - Enabled</span>
+        </div>
       </div>
 
       {/* Error */}

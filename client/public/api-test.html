@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LiveKit API 测试</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #1a1a1a; color: white; font-family: Arial; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        video { width: 100%; max-width: 400px; background: #000; border-radius: 5px; margin: 10px 0; }
+        .log { background: #222; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .status { background: #444; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 LiveKit API 测试</h1>
+        
+        <div class="status" id="status">未连接</div>
+        
+        <button class="btn-primary" id="connect">1. 连接房间</button>
+        <button class="btn-success" id="enableCam">2. 启用摄像头</button>
+        <button class="btn-warning" id="enableScreen">3. 启用屏幕共享</button>
+        
+        <div>
+            <h3>📹 摄像头预览</h3>
+            <video id="cameraPreview" autoplay muted playsinline></video>
+        </div>
+        
+        <div>
+            <h3>🖥️ 屏幕共享预览</h3>
+            <video id="screenPreview" autoplay muted playsinline></video>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module">
+        import { Room, RoomEvent, createLocalTracks, Track } from "https://unpkg.com/livekit-client@2.9.0/dist/livekit-client.esm.js";
+
+        const log = (message) => {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        };
+
+        const updateStatus = (status) => {
+            document.getElementById('status').textContent = status;
+            log(`状态: ${status}`);
+        };
+
+        // LiveKit配置
+        const serverUrl = "wss://doratele-wmf8rq69.livekit.cloud";
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tIjoiZGVtbyIsInJvb21Kb2luIjp0cnVlLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWV9LCJpc3MiOiJBUElGdU5OclQyN2VLVFciLCJleHAiOjE3NjE2MjQ4MDksIm5iZiI6MCwic3ViIjoiY2FyZS0xIn0._K0fJEQYq9ByXGKBrCUront3haUaALmy5iFe5kTBfKc";
+
+        const room = new Room({
+            adaptiveStream: { pixelDensity: "screen" },
+            dynacast: true,
+        });
+
+        const cameraPreview = document.getElementById('cameraPreview');
+        const screenPreview = document.getElementById('screenPreview');
+
+        // 连接房间
+        document.getElementById('connect').onclick = async () => {
+            try {
+                updateStatus('连接中...');
+                await room.connect(serverUrl, token);
+                updateStatus(`已连接到房间: ${room.name}`);
+                log(`参与者数量: ${room.remoteParticipants.size}`);
+                
+                // 显示房间状态
+                log(`房间状态: ${room.state}`);
+                log(`本地参与者: ${room.localParticipant.identity}`);
+            } catch (error) {
+                updateStatus(`连接失败: ${error.message}`);
+                log(`连接错误: ${error}`);
+            }
+        };
+
+        // 启用摄像头
+        document.getElementById('enableCam').onclick = async () => {
+            try {
+                updateStatus('启用摄像头...');
+                
+                // 方法1: 使用 setCameraEnabled
+                await room.localParticipant.setCameraEnabled(true);
+                log('✅ setCameraEnabled(true) 调用成功');
+                
+                // 检查状态
+                const isEnabled = room.localParticipant.isCameraEnabled;
+                log(`摄像头状态: ${isEnabled ? '启用' : '禁用'}`);
+                
+                // 获取摄像头轨道
+                const videoTracks = [...room.localParticipant.videoTracks.values()];
+                log(`视频轨道数量: ${videoTracks.length}`);
+                
+                videoTracks.forEach((pub, index) => {
+                    log(`轨道 ${index}: source=${pub.source}, enabled=${pub.isEnabled}, muted=${pub.isMuted}`);
+                });
+                
+                // 创建本地预览
+                const tracks = await createLocalTracks({ video: true, audio: false });
+                const videoTrack = tracks.find(t => t.kind === 'video');
+                if (videoTrack) {
+                    cameraPreview.srcObject = new MediaStream([videoTrack.mediaStreamTrack]);
+                    log('✅ 摄像头预览已设置');
+                }
+                
+                updateStatus('摄像头已启用');
+            } catch (error) {
+                updateStatus(`摄像头启用失败: ${error.message}`);
+                log(`摄像头错误: ${error}`);
+            }
+        };
+
+        // 启用屏幕共享
+        document.getElementById('enableScreen').onclick = async () => {
+            try {
+                updateStatus('启用屏幕共享...');
+                
+                // 获取屏幕共享流
+                const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                const [videoTrack] = stream.getVideoTracks();
+                log(`屏幕共享轨道: ${videoTrack.label}`);
+                
+                // 发布屏幕共享轨道
+                await room.localParticipant.publishTrack(videoTrack, {
+                    source: Track.Source.ScreenShare,
+                    name: 'screen-share'
+                });
+                
+                log('✅ 屏幕共享轨道已发布');
+                
+                // 设置本地预览
+                screenPreview.srcObject = new MediaStream([videoTrack]);
+                log('✅ 屏幕共享预览已设置');
+                
+                // 检查发布的轨道
+                const videoTracks = [...room.localParticipant.videoTracks.values()];
+                log(`发布后视频轨道数量: ${videoTracks.length}`);
+                
+                videoTracks.forEach((pub, index) => {
+                    log(`轨道 ${index}: source=${pub.source}, enabled=${pub.isEnabled}, muted=${pub.isMuted}`);
+                });
+                
+                updateStatus('屏幕共享已启用');
+            } catch (error) {
+                updateStatus(`屏幕共享失败: ${error.message}`);
+                log(`屏幕共享错误: ${error}`);
+            }
+        };
+
+        // 监听轨道事件
+        room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+            log(`📥 轨道订阅: ${track.kind} 来源: ${publication.source} 参与者: ${participant.identity}`);
+        });
+
+        room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+            log(`📤 轨道取消订阅: ${track.kind} 来源: ${publication.source} 参与者: ${participant.identity}`);
+        });
+
+        room.on(RoomEvent.TrackPublished, (publication, participant) => {
+            log(`📤 轨道发布: ${publication.kind} 来源: ${publication.source} 参与者: ${participant.identity}`);
+        });
+
+        room.on(RoomEvent.TrackUnpublished, (publication, participant) => {
+            log(`📤 轨道取消发布: ${publication.kind} 来源: ${publication.source} 参与者: ${participant.identity}`);
+        });
+
+        // 定期显示状态
+        setInterval(() => {
+            if (room.state === 'connected') {
+                const videoTracks = [...room.localParticipant.videoTracks.values()];
+                if (videoTracks.length > 0) {
+                    const trackInfo = videoTracks.map(pub => ({
+                        source: pub.source,
+                        enabled: pub.isEnabled,
+                        muted: pub.isMuted,
+                        track: !!pub.track
+                    }));
+                    log(`📊 轨道状态: ${JSON.stringify(trackInfo)}`);
+                }
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
+
+
+
